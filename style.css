@@ -1,0 +1,432 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=DM+Mono:wght@300;400&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #f0eeeb;
+  --surface:   #ffffff;
+  --border:    #dddbd7;
+  --text:      #1c1a17;
+  --muted:     #999690;
+  --accent:    #1c1a17;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'DM Mono', monospace;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── MAIN PAGE ─────────────────────────────── */
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 48px 24px;
+  gap: 0;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 64px;
+}
+
+header .eyebrow {
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+header h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 300;
+  font-size: 48px;
+  letter-spacing: 0.04em;
+  color: var(--text);
+  line-height: 1;
+}
+
+/* ── RESULT CARD ───────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  width: 100%;
+  max-width: 440px;
+  padding: 52px 40px;
+  text-align: center;
+  margin-bottom: 20px;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.5) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.rarity-badge {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 4px 12px;
+  border-radius: 2px;
+  font-weight: 400;
+  transition: all 0.3s ease;
+}
+
+.result-name {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 52px;
+  font-weight: 300;
+  letter-spacing: 0.02em;
+  color: var(--text);
+  line-height: 1;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.result-name.flash {
+  opacity: 0;
+  transform: translateY(6px);
+}
+
+.result-name.idle {
+  font-size: 18px;
+  font-family: 'DM Mono', monospace;
+  font-weight: 300;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+
+/* ── BUTTONS ───────────────────────────────── */
+.btn-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  max-width: 440px;
+  margin-bottom: 0;
+}
+
+.btn {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 16px 20px;
+  font-size: 11px;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  flex: 2;
+}
+
+.btn-primary:hover { background: #333; border-color: #333; }
+.btn-secondary:hover { background: #f5f3f0; }
+
+/* ── BOOK OVERLAY ──────────────────────────── */
+.book-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 18, 14, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.book-overlay.open {
+  opacity: 1;
+  pointer-events: all;
+}
+
+/* ── BOOK ──────────────────────────────────── */
+.book {
+  width: 680px;
+  max-width: 96vw;
+  height: 520px;
+  max-height: 90vh;
+  position: relative;
+  perspective: 1400px;
+}
+
+.book-cover {
+  position: absolute;
+  inset: 0;
+  background: #1c1a17;
+  border-radius: 2px 6px 6px 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  box-shadow: -6px 0 0 #111, 8px 8px 40px rgba(0,0,0,0.5);
+  z-index: 10;
+  cursor: pointer;
+  transition: transform 0.6s ease;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+}
+
+.book-cover.opened {
+  transform: rotateY(-160deg);
+  pointer-events: none;
+}
+
+.book-cover-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 28px;
+  font-weight: 300;
+  color: #e8e4dc;
+  letter-spacing: 0.1em;
+}
+
+.book-cover-sub {
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: #666;
+}
+
+.book-cover-line {
+  width: 60px;
+  height: 1px;
+  background: #444;
+}
+
+.book-cover-tap {
+  position: absolute;
+  bottom: 24px;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #555;
+}
+
+/* ── BOOK PAGES ────────────────────────────── */
+.book-pages {
+  position: absolute;
+  inset: 0;
+  background: #faf8f4;
+  border-radius: 2px 6px 6px 2px;
+  box-shadow: -6px 0 0 #e0ddd8, 8px 8px 40px rgba(0,0,0,0.3);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.book-header {
+  padding: 28px 32px 20px;
+  border-bottom: 1px solid #e8e4de;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.book-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: 0.05em;
+  color: #1c1a17;
+}
+
+.book-close {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #999;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-family: 'DM Mono', monospace;
+  padding: 4px 8px;
+}
+
+.book-close:hover { color: #333; }
+
+/* Rarity tabs */
+.book-tabs {
+  display: flex;
+  border-bottom: 1px solid #e8e4de;
+  padding: 0 32px;
+  gap: 0;
+  flex-shrink: 0;
+}
+
+.tab-btn {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #aaa;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 12px 14px;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  transition: all 0.2s;
+  margin-bottom: -1px;
+}
+
+.tab-btn:hover { color: #555; }
+.tab-btn.active { color: #1c1a17; border-bottom-color: #1c1a17; }
+
+/* Page container with turn animation */
+.page-wrap {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.page {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  padding: 24px 32px 32px;
+  transform-origin: left center;
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+}
+
+.page.exit-left {
+  transform: rotateY(-90deg) translateX(-20px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.page.enter-right {
+  transform: rotateY(30deg);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.page.visible {
+  transform: rotateY(0deg);
+  opacity: 1;
+}
+
+/* Name grid inside page */
+.rarity-section-label {
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #aaa;
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ece8e2;
+}
+
+.names-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.name-entry {
+  padding: 9px 12px;
+  border-radius: 3px;
+  font-size: 13px;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  color: #2a2825;
+  background: #f3f0eb;
+  border: 1px solid #e8e4de;
+}
+
+.name-entry.collected {
+  background: #fff;
+  border-color: #d8d4ce;
+}
+
+.name-entry.not-collected {
+  color: #ccc;
+  background: #f7f5f2;
+  border-color: #edeae6;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: #bbb;
+  font-size: 11px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* Page footer */
+.book-footer {
+  padding: 14px 32px;
+  border-top: 1px solid #e8e4de;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.book-count {
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  color: #bbb;
+  text-transform: uppercase;
+}
+
+/* Page-turn nav arrows */
+.page-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.page-nav button {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #ddd;
+  background: none;
+  border-radius: 2px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #888;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.page-nav button:hover { background: #f0ede8; color: #333; }
+.page-nav button:disabled { opacity: 0.25; cursor: default; }
+
+/* Scrollbar */
+.page::-webkit-scrollbar { width: 4px; }
+.page::-webkit-scrollbar-track { background: transparent; }
+.page::-webkit-scrollbar-thumb { background: #ddd; border-radius: 2px; }
