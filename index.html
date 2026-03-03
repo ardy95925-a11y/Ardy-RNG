@@ -1,0 +1,1807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Name Roller</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Mono:wght@300;400&family=Cinzel:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Uncial+Antiqua&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#f0eeeb;--surface:#fff;--border:#dddbd7;--text:#1c1a17;--muted:#999690;
+  --accent:#1c1a17;--book-bg:#faf8f4;--book-border:#e8e4de;
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --ease-out:cubic-bezier(.22,1,.36,1);
+}
+
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 24px 28px}
+
+/* ── HEADER ── */
+header{text-align:center;margin-bottom:40px;animation:fade-up .6s var(--ease-out) both}
+.eyebrow{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+h1{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:48px;letter-spacing:.04em;line-height:1}
+
+@keyframes fade-up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+
+/* ── STREAK ── */
+.streak-row{width:100%;max-width:440px;margin-bottom:8px;display:flex;align-items:center;gap:10px;height:20px;opacity:0;transition:opacity .4s ease}
+.streak-row.visible{opacity:1}
+.streak-label{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.streak-pips{display:flex;gap:5px;align-items:center}
+.pip{width:8px;height:8px;border-radius:50%;border:1px solid var(--border);background:var(--surface);transition:background .25s,border-color .25s,box-shadow .25s,transform .2s}
+.pip.lit-uncommon{background:#4a7a4a;border-color:#4a7a4a;box-shadow:0 0 6px rgba(74,122,74,.65)}
+.pip.lit-rare    {background:#3a5a8a;border-color:#3a5a8a;box-shadow:0 0 8px rgba(58,90,138,.7)}
+.pip.lit-legendary{background:#c8960a;border-color:#c8960a;box-shadow:0 0 10px rgba(200,150,10,.85)}
+.pip.lit-mythic  {background:linear-gradient(135deg,#ff40ff,#8040ff);border-color:#c040ff;box-shadow:0 0 12px rgba(192,64,255,.9)}
+.pip.lit-cursed  {background:#8b0000;border-color:#8b0000;box-shadow:0 0 8px rgba(180,0,0,.8)}
+.pip.lit-divine  {background:linear-gradient(135deg,#fff7a0,#ffe040,#ffc800);border-color:#ffd700;box-shadow:0 0 14px rgba(255,215,0,1)}
+.pip.popping     {animation:pip-pop .3s var(--ease-spring) forwards}
+@keyframes pip-pop{0%{transform:scale(1)}50%{transform:scale(1.6)}100%{transform:scale(1)}}
+.streak-bonus{font-size:9px;letter-spacing:.1em;color:#c8960a;transition:opacity .3s,transform .3s;white-space:nowrap}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:5px;width:100%;max-width:440px;padding:48px 40px;text-align:center;margin-bottom:12px;min-height:210px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;box-shadow:0 2px 20px rgba(0,0,0,.05);position:relative;overflow:hidden;transition:box-shadow .6s ease,border-color .5s ease;animation:fade-up .6s var(--ease-out) .08s both}
+.card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.55) 0%,transparent 55%);pointer-events:none}
+.card.idle-pulse{animation:card-idle 6s ease-in-out infinite}
+@keyframes card-idle{0%,100%{box-shadow:0 2px 20px rgba(0,0,0,.05)}50%{box-shadow:0 4px 28px rgba(0,0,0,.08)}}
+
+.card.rarity-uncommon{box-shadow:0 0 30px rgba(74,122,74,.14),0 2px 16px rgba(0,0,0,.04);border-color:#b8d4b8}
+.card.rarity-rare    {box-shadow:0 0 44px rgba(58,90,138,.2),0 2px 16px rgba(0,0,0,.04);border-color:#aac0e0}
+.card.rarity-legendary{border-color:transparent;box-shadow:0 0 60px rgba(200,140,20,.38),0 0 120px rgba(180,100,200,.18);animation:leg-card 3s ease-in-out infinite}
+.card.rarity-mythic  {border-color:transparent;animation:mythic-card 2.5s ease-in-out infinite}
+.card.rarity-cursed  {border-color:#4a0a0a;box-shadow:0 0 44px rgba(180,0,0,.28),0 0 80px rgba(80,0,0,.14);animation:cursed-card 4s ease-in-out infinite}
+.card.rarity-divine  {border-color:transparent;animation:divine-card 2s ease-in-out infinite}
+
+@keyframes leg-card   {0%,100%{box-shadow:0 0 60px rgba(200,140,20,.38),0 0 120px rgba(180,100,200,.18)}50%{box-shadow:0 0 90px rgba(200,140,20,.6),0 0 180px rgba(180,100,200,.3)}}
+@keyframes mythic-card{0%,100%{box-shadow:0 0 60px rgba(180,0,255,.42),0 0 120px rgba(255,0,180,.22)}50%{box-shadow:0 0 100px rgba(180,0,255,.72),0 0 200px rgba(255,0,180,.42)}}
+@keyframes cursed-card{0%,100%{box-shadow:0 0 44px rgba(180,0,0,.28),0 0 80px rgba(80,0,0,.14)}50%{box-shadow:0 0 64px rgba(200,0,0,.44),0 0 120px rgba(120,0,0,.28)}}
+@keyframes divine-card{0%,100%{box-shadow:0 0 80px rgba(255,215,0,.6),0 0 160px rgba(255,255,200,.3),0 0 240px rgba(255,200,0,.15)}50%{box-shadow:0 0 120px rgba(255,215,0,.9),0 0 240px rgba(255,255,180,.5),0 0 360px rgba(255,220,0,.25)}}
+
+.card.rarity-legendary::after{content:'';position:absolute;inset:-2px;border-radius:7px;background:linear-gradient(135deg,#f0c040,#e080ff,#60c0ff,#f0c040);background-size:300% 300%;animation:leg-border 4s linear infinite;z-index:-1}
+.card.rarity-mythic::after   {content:'';position:absolute;inset:-2px;border-radius:7px;background:linear-gradient(135deg,#ff00ff,#8800ff,#ff00aa,#00aaff,#ff00ff);background-size:400% 400%;animation:mythic-border 2.5s linear infinite;z-index:-1}
+.card.rarity-cursed::after   {content:'';position:absolute;inset:-1px;border-radius:6px;background:linear-gradient(135deg,#8b0000,#2a0000,#600000,#8b0000);background-size:300% 300%;animation:cursed-border 6s linear infinite;z-index:-1}
+.card.rarity-divine::after   {content:'';position:absolute;inset:-3px;border-radius:8px;background:conic-gradient(#ffd700,#fff7a0,#ffec00,#ffc800,#ffe680,#fff0a0,#ffd700);animation:divine-spin 2s linear infinite;z-index:-1}
+
+@keyframes leg-border   {0%{background-position:0% 50%}100%{background-position:300% 50%}}
+@keyframes mythic-border{0%{background-position:0% 50%}100%{background-position:400% 50%}}
+@keyframes cursed-border{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes divine-spin  {from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+
+.roll-counter{position:absolute;top:12px;right:14px;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase}
+.new-badge{position:absolute;top:11px;left:13px;font-size:8px;letter-spacing:.15em;text-transform:uppercase;padding:3px 9px;border-radius:2px;background:#1c1a17;color:#fff;opacity:0;transition:opacity .35s;pointer-events:none}
+.new-badge.show{opacity:1}
+
+/* ── RARITY BADGE ── */
+.rarity-badge{font-size:9px;letter-spacing:.2em;text-transform:uppercase;padding:4px 14px;border-radius:2px;opacity:0;transform:translateY(-6px) scale(.95);transition:opacity .4s ease,transform .4s var(--ease-spring)}
+.rarity-badge.visible{opacity:1;transform:translateY(0) scale(1)}
+
+/* ── RESULT NAME ── */
+.result-name{font-family:'Cormorant Garamond',serif;font-size:52px;font-weight:300;letter-spacing:.02em;color:var(--text);line-height:1.1;position:relative;max-width:100%;word-break:break-word}
+.result-name.idle{font-size:18px;font-family:'DM Mono',monospace;font-weight:300;color:var(--muted);letter-spacing:.1em}
+
+.result-name.spin-fast{animation:slot-fast .06s linear infinite}
+.result-name.spin-mid {animation:slot-mid  .1s  linear infinite}
+.result-name.spin-slow{animation:slot-slow .18s linear infinite}
+@keyframes slot-fast{0%{transform:translateY(0) scaleY(1);opacity:.85}25%{transform:translateY(-11px) scaleY(.75);opacity:.35}50%{transform:translateY(0) scaleY(1);opacity:.85}75%{transform:translateY(11px) scaleY(.75);opacity:.35}100%{transform:translateY(0) scaleY(1);opacity:.85}}
+@keyframes slot-mid {0%{transform:translateY(0) scaleY(1);opacity:.9}25%{transform:translateY(-7px) scaleY(.85);opacity:.5}50%{transform:translateY(0) scaleY(1);opacity:.9}75%{transform:translateY(7px) scaleY(.85);opacity:.5}100%{transform:translateY(0) scaleY(1);opacity:.9}}
+@keyframes slot-slow{0%{transform:translateY(0) scaleY(1);opacity:.95}25%{transform:translateY(-4px) scaleY(.92);opacity:.65}50%{transform:translateY(0) scaleY(1);opacity:.95}75%{transform:translateY(4px) scaleY(.92);opacity:.65}100%{transform:translateY(0) scaleY(1);opacity:.95}}
+
+.result-name.landing{animation:name-pop .58s var(--ease-spring) forwards}
+@keyframes name-pop{0%{transform:scale(.6) translateY(28px);opacity:0}55%{transform:scale(1.07) translateY(-4px);opacity:1}100%{transform:scale(1) translateY(0);opacity:1}}
+
+.result-name.rarity-uncommon{font-family:'Playfair Display',serif;font-style:italic;color:#3a7a3a;animation:name-pop .58s var(--ease-spring) forwards,unc-shimmer 3s ease-in-out infinite .6s}
+@keyframes unc-shimmer{0%,100%{text-shadow:none}50%{text-shadow:0 0 26px rgba(60,130,60,.45),0 2px 8px rgba(60,130,60,.2)}}
+
+.result-name.rarity-rare{font-family:'Cinzel',serif;font-weight:600;font-size:42px;color:#1e3d7a;letter-spacing:.08em;animation:name-pop .58s var(--ease-spring) forwards,rare-pulse 2.5s ease-in-out infinite .6s}
+@keyframes rare-pulse{0%,100%{text-shadow:0 0 8px rgba(30,61,122,.12)}50%{text-shadow:0 0 22px rgba(30,61,122,.65),0 0 50px rgba(60,100,200,.22)}}
+
+.result-name.rarity-legendary{font-family:'Cinzel',serif;font-weight:700;font-size:44px;letter-spacing:.1em;background:linear-gradient(90deg,#f0c040,#ff8c00,#ff4080,#c040f0,#4080ff,#00c8f0,#40f090,#f0c040);background-size:300% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:name-pop .58s var(--ease-spring) forwards,leg-rainbow 3.5s linear infinite .6s}
+@keyframes leg-rainbow{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+
+.result-name.rarity-mythic{font-family:'Cinzel',serif;font-weight:700;font-size:44px;letter-spacing:.12em;background:linear-gradient(90deg,#ff00ff,#cc00ff,#8800ff,#ff00cc,#ff44ff,#cc00ff,#ff00ff);background-size:300% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:name-pop .58s var(--ease-spring) forwards,mythic-rainbow 2s linear infinite .6s,mythic-warp .9s ease-in-out infinite .6s}
+@keyframes mythic-rainbow{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+@keyframes mythic-warp{0%,100%{letter-spacing:.12em}50%{letter-spacing:.2em}}
+
+.result-name.rarity-cursed{font-family:'Uncial Antiqua',cursive;font-size:44px;color:#cc0000;letter-spacing:.06em;animation:name-pop .58s var(--ease-spring) forwards,cursed-flicker 4.5s ease-in-out infinite .6s}
+@keyframes cursed-flicker{0%,100%{text-shadow:0 0 10px rgba(200,0,0,.4),0 0 30px rgba(150,0,0,.18);color:#cc0000}18%{color:#880000;text-shadow:0 0 4px rgba(200,0,0,.18)}19%{color:#dd0000;text-shadow:0 0 22px rgba(220,0,0,.75)}38%{text-shadow:0 0 6px rgba(200,0,0,.28)}58%{text-shadow:0 0 20px rgba(200,0,0,.62)}78%{color:#aa0000}}
+
+.result-name.rarity-divine{font-family:'Cinzel',serif;font-weight:700;font-size:40px;letter-spacing:.14em;background:linear-gradient(90deg,#fff7a0,#ffd700,#ffec00,#fff0b0,#ffd700,#ffe680,#fff7a0);background-size:300% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:name-pop .58s var(--ease-spring) forwards,divine-shimmer 2s linear infinite .6s,divine-scale 1.8s ease-in-out infinite .6s}
+@keyframes divine-shimmer{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+@keyframes divine-scale{0%,100%{filter:drop-shadow(0 0 8px rgba(255,215,0,.8)) drop-shadow(0 0 24px rgba(255,220,0,.4))}50%{filter:drop-shadow(0 0 20px rgba(255,215,0,1)) drop-shadow(0 0 60px rgba(255,220,0,.7)) drop-shadow(0 0 100px rgba(255,240,0,.3))}}
+
+/* ── PARTICLES ── */
+.particle{position:absolute;pointer-events:none;animation:ptcl var(--dur,1s) ease-out forwards}
+@keyframes ptcl{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
+
+/* ── SCREEN FLASH ── */
+.flash-overlay{position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:0}
+.flash-overlay.legendary-flash{animation:flash-leg  .9s ease-out forwards}
+.flash-overlay.mythic-flash   {animation:flash-mythic 1s ease-out forwards}
+.flash-overlay.cursed-flash   {animation:flash-cursed 1.1s ease-out forwards}
+.flash-overlay.divine-flash   {animation:flash-divine 1.4s ease-out forwards}
+@keyframes flash-leg   {0%{opacity:0}8% {opacity:.32;background:radial-gradient(ellipse at 50% 40%,rgba(255,200,60,.55),rgba(220,120,255,.28) 55%,transparent 80%)}100%{opacity:0}}
+@keyframes flash-mythic{0%{opacity:0}7% {opacity:.45;background:radial-gradient(ellipse at 50% 40%,rgba(255,0,255,.65),rgba(100,0,255,.35) 55%,transparent 80%)}100%{opacity:0}}
+@keyframes flash-cursed{0%{opacity:0}5% {opacity:.38;background:radial-gradient(ellipse at 50% 40%,rgba(200,0,0,.6),rgba(80,0,0,.28) 55%,transparent 80%)}55%{opacity:.12}100%{opacity:0}}
+@keyframes flash-divine{0%{opacity:0}6% {opacity:.65;background:radial-gradient(ellipse at 50% 30%,rgba(255,255,220,.95),rgba(255,215,0,.6) 40%,rgba(255,180,0,.3) 65%,transparent 85%)}30%{opacity:.2}100%{opacity:0}}
+
+.ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.25);transform:scale(0);animation:ripple-out .5s ease-out forwards;pointer-events:none}
+@keyframes ripple-out{to{transform:scale(4);opacity:0}}
+
+/* ── BUTTONS ── */
+.btn-row{display:flex;gap:10px;width:100%;max-width:440px;animation:fade-up .6s var(--ease-out) .18s both}
+.btn{flex:1;border:1px solid var(--border);border-radius:4px;padding:16px 20px;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s,transform .1s;background:var(--surface);color:var(--text);position:relative;overflow:hidden}
+.btn:active{transform:scale(.965)}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);flex:2}
+.btn-secondary:hover{background:#f5f3f0}
+.btn-secondary:active{background:#ece9e5}
+.btn-icon{flex:0 0 50px;font-size:16px;padding:16px 0}
+
+/* ── BUTTON STYLE THEMES — injected by button-styles.js ── */
+
+/* ── HISTORY TRAY ── */
+.history-tray{width:100%;max-width:440px;display:flex;gap:5px;align-items:center;margin-bottom:10px;min-height:26px;animation:fade-up .6s var(--ease-out) .22s both}
+.hist-chip{font-size:8px;letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:2px;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .25s ease;white-space:nowrap;animation:chip-in .3s var(--ease-spring) both}
+@keyframes chip-in{from{opacity:0;transform:scale(.8) translateY(4px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.hist-chip.rarity-uncommon{border-color:#b8d4b8;color:#3a7a3a;background:#f6fcf6}
+.hist-chip.rarity-rare    {border-color:#9ab8e0;color:#1e3d7a;background:#f4f8ff;font-family:'Cinzel',serif}
+.hist-chip.rarity-legendary{border-color:#c8960a;background:linear-gradient(90deg,#f0c040,#e080ff,#60c0ff,#f0c040);background-size:200% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:chip-in .3s var(--ease-spring) both,leg-rainbow 4s linear infinite;font-family:'Cinzel',serif}
+.hist-chip.rarity-mythic  {border-color:#aa00cc;background:linear-gradient(90deg,#ff00ff,#8800ff,#ff00aa,#ff00ff);background-size:200% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:chip-in .3s var(--ease-spring) both,mythic-rainbow 2s linear infinite;font-family:'Cinzel',serif}
+.hist-chip.rarity-cursed  {border-color:#660000;color:#cc0000;background:#1a0000;font-family:'Uncial Antiqua',cursive;font-size:9px}
+.hist-chip.rarity-divine  {border-color:#ffd700;background:linear-gradient(90deg,#fff7a0,#ffd700,#ffec00,#fff7a0);background-size:200% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:chip-in .3s var(--ease-spring) both,divine-shimmer 2s linear infinite;font-family:'Cinzel',serif}
+@keyframes leg-rainbow  {0%{background-position:0% 50%}100%{background-position:200% 50%}}
+@keyframes mythic-rainbow{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+
+/* ── BELOW BUTTONS ── */
+.sub-row{display:flex;gap:8px;width:100%;max-width:440px;margin-top:10px;animation:fade-up .6s var(--ease-out) .28s both}
+.sub-btn{flex:1;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);cursor:pointer;background:none;border:1px solid var(--border);border-radius:3px;padding:7px 12px;font-family:'DM Mono',monospace;transition:all .15s}
+.sub-btn:hover{color:var(--text);border-color:var(--text);background:rgba(0,0,0,.02)}
+
+/* ── REBIRTH BUTTON ── */
+.rebirth-btn{
+  display:none;width:100%;padding:8px;margin-top:8px;
+  border-radius:3px;font-size:9px;letter-spacing:.22em;text-transform:uppercase;
+  font-family:'Cinzel',serif;cursor:pointer;
+  background:linear-gradient(135deg,#2a0a00,#1a0500);
+  border:1px solid #c84000;color:#ff6020;
+  animation:rebirth-pulse 2.5s ease-in-out infinite;
+  position:relative;overflow:hidden;
+}
+.rebirth-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,100,30,.12),transparent);animation:storm-bolt 3s ease-in-out infinite}
+@keyframes rebirth-pulse{0%,100%{box-shadow:0 0 12px rgba(200,80,0,.3),inset 0 0 20px rgba(200,60,0,.05)}50%{box-shadow:0 0 30px rgba(230,100,0,.65),inset 0 0 30px rgba(220,80,0,.12)}}
+.rebirth-btn.show{display:block}
+
+/* ── SAVE STATUS ── */
+.save-status{font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;text-align:center;margin-top:8px;height:14px;transition:color .3s}
+.save-status.saving{color:#888}.save-status.saved{color:#4a7a4a}.save-status.error{color:#aa4444}
+
+/* ── OVERLAYS ── */
+.overlay{position:fixed;inset:0;background:rgba(20,18,14,.65);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .28s ease}
+.overlay.open{opacity:1;pointer-events:all}
+.overlay > *{transform:scale(.96) translateY(8px);transition:transform .32s var(--ease-spring)}
+.overlay.open > *{transform:scale(1) translateY(0)}
+
+/* ── BOOK ── */
+.book{width:700px;max-width:96vw;height:560px;max-height:90vh;position:relative;perspective:1400px}
+.book-cover{position:absolute;inset:0;background:#1c1a17;border-radius:2px 6px 6px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;box-shadow:-6px 0 0 #111,0 0 0 1px rgba(255,255,255,.04) inset,8px 8px 40px rgba(0,0,0,.5);z-index:10;cursor:pointer;transition:transform .65s cubic-bezier(.4,0,.2,1);transform-origin:left center;transform-style:preserve-3d}
+.book-cover::before{content:'';position:absolute;left:18px;top:0;bottom:0;width:3px;background:linear-gradient(180deg,#2a2826,#3a3632,#2a2826,#3a3632,#2a2826);border-radius:0 1px 1px 0}
+.book-cover.opened{transform:rotateY(-160deg);pointer-events:none}
+.bc-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;color:#e8e4dc;letter-spacing:.1em}
+.bc-sub  {font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#555}
+.bc-line {width:60px;height:1px;background:linear-gradient(90deg,transparent,#444,transparent)}
+.bc-tap  {position:absolute;bottom:22px;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#444}
+
+.book-pages{position:absolute;inset:0;background:var(--book-bg);border-radius:2px 6px 6px 2px;box-shadow:-6px 0 0 #e0ddd8,8px 8px 40px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow:hidden}
+.book-header{padding:22px 32px 16px;border-bottom:1px solid var(--book-border);display:flex;align-items:baseline;justify-content:space-between;flex-shrink:0}
+.book-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;letter-spacing:.05em}
+.book-close{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#aaa;cursor:pointer;background:none;border:none;font-family:'DM Mono',monospace;transition:color .15s}
+.book-close:hover{color:#333}
+.book-tabs{display:flex;border-bottom:1px solid var(--book-border);padding:0 28px;flex-shrink:0;overflow-x:auto;gap:0;scrollbar-width:none}
+.book-tabs::-webkit-scrollbar{display:none}
+.tab-btn{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:#bbb;background:none;border:none;border-bottom:2px solid transparent;padding:10px 11px;cursor:pointer;font-family:'DM Mono',monospace;transition:color .18s,border-color .18s;margin-bottom:-1px;white-space:nowrap}
+.tab-btn:hover{color:#777}
+.tab-btn.active{color:#1c1a17;border-bottom-color:#1c1a17}
+.page-wrap{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;padding:18px 28px 24px;transform-origin:left center;transition:transform .42s cubic-bezier(.4,0,.2,1),opacity .28s ease}
+.page.exit-left {transform:rotateY(-88deg) translateX(-16px);opacity:0;pointer-events:none}
+.page.enter-right{transform:rotateY(28deg);opacity:0;pointer-events:none}
+.page.visible   {transform:rotateY(0deg);opacity:1}
+
+/* Book rebirth banner */
+.book-rebirth-banner{display:none;margin:12px 28px 0;padding:10px 16px;background:linear-gradient(135deg,#1a0600,#0d0300);border:1px solid #c84000;border-radius:4px;align-items:center;justify-content:space-between;gap:12px}
+.book-rebirth-banner.show{display:flex}
+.brb-text{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#ff8040;line-height:1.5}
+.brb-count{font-size:11px;color:#ff6020}
+.brb-btn{font-size:8px;letter-spacing:.18em;text-transform:uppercase;padding:7px 16px;border-radius:2px;border:1px solid #c84000;background:rgba(200,80,0,.12);color:#ff8040;cursor:pointer;font-family:'Cinzel',serif;white-space:nowrap;transition:all .2s;animation:rebirth-pulse 2s ease-in-out infinite}
+.brb-btn:hover{background:rgba(200,80,0,.28);color:#ffaa60}
+
+.rarity-section-label{font-size:9px;letter-spacing:.22em;text-transform:uppercase;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid #ece8e2}
+.names-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:16px}
+.name-entry{padding:7px 9px;border-radius:3px;font-size:13px;font-family:'Cormorant Garamond',serif;font-weight:400;letter-spacing:.03em;background:#f3f0eb;border:1px solid #e8e4de;transition:background .18s,border-color .18s,transform .15s;cursor:default}
+.name-entry:hover{transform:scale(1.02)}
+.name-entry.not-collected{color:#ccc;background:#f7f5f2;border-color:#edeae6}
+.name-entry.not-collected:hover{transform:none}
+.name-entry.collected          {background:#fff;border-color:#d8d4ce;color:#2a2825}
+.name-entry.collected.rarity-uncommon{color:#3a7a3a;border-color:#b8d4b8;background:#f2f9f2}
+.name-entry.collected.rarity-rare    {color:#1e3d7a;border-color:#9ab8e0;background:#f0f5ff;font-family:'Cinzel',serif;font-size:11px}
+.name-entry.collected.rarity-legendary{font-family:'Cinzel',serif;font-size:11px;font-weight:600;border:1px solid #c8960a;background:linear-gradient(90deg,#f0c040,#e080ff,#60c0ff,#f0c040);background-size:200% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:leg-rainbow 4s linear infinite}
+.name-entry.collected.rarity-mythic  {font-family:'Cinzel',serif;font-size:11px;font-weight:700;border:1px solid #aa00cc;background:linear-gradient(90deg,#ff00ff,#8800ff,#ff00aa,#ff00ff);background-size:200% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:mythic-rainbow 2s linear infinite}
+.name-entry.collected.rarity-cursed  {font-family:'Uncial Antiqua',cursive;color:#aa0000;border-color:#660000;background:#160000;font-size:11px}
+.name-entry.collected.rarity-divine  {font-family:'Cinzel',serif;font-size:11px;font-weight:700;border:1px solid #ffd700;background:linear-gradient(90deg,#fff7a0,#ffd700,#ffec00,#fff7a0);background-size:200% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:divine-shimmer 2s linear infinite}
+
+.book-footer{padding:12px 32px;border-top:1px solid var(--book-border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.book-count{font-size:10px;letter-spacing:.15em;color:#bbb;text-transform:uppercase}
+.page-nav{display:flex;gap:8px}
+.page-nav button{width:28px;height:28px;border:1px solid #ddd;background:none;border-radius:2px;cursor:pointer;font-size:12px;color:#999;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.page-nav button:hover{background:#f0ede8;color:#333}
+.page-nav button:disabled{opacity:.22;cursor:default}
+
+/* ── SHOP — styled by button-styles.js ── */
+
+/* ── CONSTELLATION ── */
+.constellation-panel{width:680px;max-width:96vw;max-height:90vh;background:#08060e;border-radius:6px;box-shadow:0 0 80px rgba(100,60,200,.28),0 24px 80px rgba(0,0,0,.6);display:flex;flex-direction:column;overflow:hidden}
+.const-header{padding:22px 32px 16px;border-bottom:1px solid #1c1828;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.const-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:300;color:#c8b8f0;letter-spacing:.1em}
+.const-sub{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#3a364a;margin-top:3px}
+.const-close{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#3a364a;cursor:pointer;background:none;border:none;font-family:'DM Mono',monospace;transition:color .15s}
+.const-close:hover{color:#888}
+.const-body{flex:1;overflow-y:auto;padding:20px 28px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.const-group{border:1px solid #1c1828;border-radius:4px;padding:14px;background:#0c0a14;transition:border-color .4s,box-shadow .4s}
+.const-group.complete{border-color:#6040c0;box-shadow:0 0 22px rgba(96,64,192,.22)}
+.const-group-name{font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:400;color:#9880c8;letter-spacing:.06em;margin-bottom:3px}
+.const-progress-line{font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:#3a364a;margin-bottom:9px}
+.const-group.complete .const-progress-line{color:#8060d0}
+.const-mini-bar{height:2px;background:#1c1828;border-radius:1px;overflow:hidden;margin-bottom:10px}
+.const-mini-fill{height:100%;background:linear-gradient(90deg,#4030a0,#9060e0);border-radius:1px;transition:width .5s var(--ease-out)}
+.const-stars{display:flex;flex-wrap:wrap;gap:4px}
+.const-star{font-size:9px;letter-spacing:.05em;padding:3px 7px;border-radius:2px;border:1px solid #1c1828;color:#2a2640;background:#0a0814;transition:all .35s;font-family:'Cormorant Garamond',serif}
+.const-star.found{color:#b0a0e0;border-color:#3c2c90;background:#121028;text-shadow:0 0 8px rgba(160,140,230,.35)}
+.const-star.found.new-find{animation:star-burst .5s var(--ease-spring)}
+@keyframes star-burst{0%{transform:scale(1)}40%{transform:scale(1.4);background:#2a1860;color:#e0d4ff}100%{transform:scale(1)}}
+.const-footer{padding:12px 32px;border-top:1px solid #1c1828;font-size:9px;letter-spacing:.15em;color:#3a364a;text-transform:uppercase;flex-shrink:0;display:flex;justify-content:space-between;align-items:center}
+.const-complete-badge{color:#8060d0}
+
+/* ── REBIRTH CUTSCENE ── */
+#rebirthCutscene{
+  position:fixed;inset:0;z-index:9000;background:#000;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  overflow:hidden;animation:cutscene-fade-in .4s ease forwards;
+}
+#rebirthCutscene.active{display:flex}
+@keyframes cutscene-fade-in{from{opacity:0}to{opacity:1}}
+
+.rb-fire-bg{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 120%,rgba(255,120,0,.5),rgba(255,60,0,.25) 40%,rgba(100,0,0,.15) 70%,transparent 100%);
+  opacity:0;transition:opacity 1.2s ease-out;
+  filter:blur(2px);
+  animation:fire-glow 3s ease-in-out infinite;
+}
+.rb-fire-bg.show{opacity:1}
+@keyframes fire-glow{0%,100%{filter:blur(2px) brightness(1)}50%{filter:blur(3px) brightness(1.3)}}
+
+.rb-name-pile{position:absolute;width:100%;height:100%;pointer-events:none}
+.rb-name-item{
+  position:absolute;font-family:'Cormorant Garamond',serif;font-weight:600;
+  white-space:nowrap;opacity:0;pointer-events:none;
+  filter:drop-shadow(0 0 2px rgba(0,0,0,.8));
+  animation:rb-rise-v2 var(--dur,1.2s) var(--ease-spring) var(--delay,0s) forwards;
+}
+@keyframes rb-rise-v2{
+  0%{opacity:0;transform:translateY(200px) scale(.2) rotate(var(--rot,0deg));filter:blur(4px)}
+  30%{opacity:.9}
+  100%{opacity:1;transform:translateY(var(--ty,-80px)) scale(1) rotate(var(--rot2,0deg));filter:blur(0)}
+}
+
+.rb-name-item.burning{
+  animation:rb-burn-v2 var(--bdur,1s) ease-in var(--bdelay,0s) forwards;
+}
+@keyframes rb-burn-v2{
+  0%{opacity:1;filter:drop-shadow(0 0 2px rgba(0,0,0,.8)) brightness(1);transform:translateY(var(--ty,-80px)) scale(1) rotate(var(--rot2,0deg))}
+  15%{filter:drop-shadow(0 0 4px rgba(255,100,0,.8)) brightness(1.8) sepia(0.8) hue-rotate(20deg);color:#ffaa40}
+  35%{filter:drop-shadow(0 0 8px rgba(255,120,0,.9)) brightness(2.2) sepia(1) hue-rotate(10deg) saturate(3);color:#ff6600;transform:translateY(calc(var(--ty,-80px) - 20px)) scale(.9)}
+  60%{opacity:.6;filter:drop-shadow(0 0 12px rgba(255,80,0,.6)) brightness(2.8) sepia(1) blur(1px);color:#ff4400;transform:translateY(calc(var(--ty,-80px) - 50px)) scale(.6) rotate(calc(var(--rot2,0deg) + 12deg))}
+  100%{opacity:0;filter:drop-shadow(0 0 16px rgba(255,60,0,0)) brightness(3) blur(6px);transform:translateY(calc(var(--ty,-80px) - 140px)) scale(.05) rotate(calc(var(--rot2,0deg) + 30deg))}
+}
+
+.rb-ash-particle{
+  position:absolute;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle, rgba(255,140,60,0.9), rgba(200,80,20,0.6));
+  box-shadow:0 0 4px rgba(255,100,0,.7);
+  animation:ash-float-v2 var(--adur,3s) ease-out var(--adelay,0s) forwards;
+}
+@keyframes ash-float-v2{
+  0%{opacity:.95;transform:translate(0,0) scale(1);filter:blur(0)}
+  40%{opacity:.7;filter:blur(0.5px)}
+  100%{opacity:0;transform:translate(var(--ax,0px),var(--ay,-200px)) scale(.05);filter:blur(2px)}
+}
+
+.rb-title{
+  font-family:'Cinzel',serif;font-size:56px;font-weight:700;letter-spacing:.25em;
+  color:#fff;text-align:center;opacity:0;position:relative;z-index:2;
+  text-shadow:0 0 40px rgba(255,120,0,.9),0 0 80px rgba(255,80,0,.5),0 0 120px rgba(200,40,0,.3);
+  animation:none;word-spacing:.2em;
+}
+.rb-title.show{animation:rb-title-in-v2 .9s var(--ease-spring) forwards}
+@keyframes rb-title-in-v2{
+  0%{opacity:0;transform:scale(.3) translateY(60px);filter:blur(8px)}
+  40%{opacity:.8;filter:blur(2px)}
+  60%{opacity:1;transform:scale(1.15) translateY(-8px)}
+  100%{opacity:1;transform:scale(1) translateY(0);text-shadow:0 0 40px rgba(255,120,0,.9),0 0 80px rgba(255,80,0,.5),0 0 120px rgba(200,40,0,.3)}
+}
+
+.rb-subtitle{
+  font-size:13px;letter-spacing:.35em;text-transform:uppercase;color:#ffaa66;text-align:center;margin-top:16px;opacity:0;
+  position:relative;z-index:2;font-weight:500;
+  text-shadow:0 0 20px rgba(255,150,80,.6);
+}
+.rb-subtitle.show{animation:rb-subtitle-in .7s ease .5s forwards}
+@keyframes rb-subtitle-in{
+  from{opacity:0;transform:translateY(20px);filter:blur(3px)}
+  to{opacity:1;transform:translateY(0);filter:blur(0)}
+}
+
+.rb-skip{
+  position:absolute;bottom:28px;right:32px;font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:rgba(255,255,255,.2);cursor:pointer;border:1px solid rgba(255,255,255,.15);
+  border-radius:2px;padding:8px 14px;background:rgba(0,0,0,.3);font-family:'DM Mono',monospace;
+  transition:all .25s;z-index:10;backdrop-filter:blur(4px);
+}
+.rb-skip:hover{color:rgba(255,255,255,.5);border-color:rgba(255,255,255,.3);background:rgba(0,0,0,.5)}
+.rb-skip:active{transform:scale(.95)}
+
+/* ── SKILL TREE ── */
+.skill-tree-overlay{
+  position:fixed;inset:0;background:linear-gradient(135deg,#05030c,#08060e,#0a070f);z-index:8000;
+  display:none;flex-direction:column;overflow:hidden;
+}
+.skill-tree-overlay.active{display:flex;animation:st-fade-in .4s ease forwards}
+@keyframes st-fade-in{from{opacity:0}to{opacity:1}}
+
+.skill-tree-overlay::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 50%, rgba(100,60,150,.08), transparent 70%);
+  pointer-events:none;z-index:1;
+}
+
+.st-header{
+  padding:24px 32px 18px;border-bottom:2px solid rgba(100,80,150,.3);display:flex;align-items:center;
+  justify-content:space-between;flex-shrink:0;background:linear-gradient(90deg,#08060e,#0a0810);
+  z-index:10;box-shadow:0 2px 20px rgba(0,0,0,.6),0 0 30px rgba(100,80,150,.1);
+  position:relative;
+}
+
+.st-header::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(150,100,200,.4),transparent);
+}
+
+.st-title-block{display:flex;flex-direction:column;gap:4px}
+.st-title{
+  font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;color:#e8d8ff;
+  letter-spacing:.1em;text-shadow:0 0 20px rgba(150,100,200,.3);
+}
+.st-subtitle{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#6a5a8a;font-weight:500}
+
+.st-points-bar{display:flex;align-items:center;gap:20px}
+.st-points{font-size:14px;letter-spacing:.1em;color:#b8a8d8;font-family:'DM Mono',monospace;font-weight:500}
+.st-points span{font-size:20px;color:#e8d0ff;font-family:'Cinzel',serif;text-shadow:0 0 12px rgba(180,120,220,.5)}
+.st-points-label{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:#5a4a7a}
+
+.st-close{
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#6a5a8a;cursor:pointer;
+  background:rgba(100,80,150,.1);border:1px solid rgba(150,100,200,.3);font-family:'DM Mono',monospace;
+  transition:all .2s;padding:8px 14px;border-radius:2px;font-weight:500;
+}
+.st-close:hover{
+  color:#c8a8f0;border-color:rgba(150,120,220,.6);background:rgba(100,80,150,.25);
+  box-shadow:0 0 12px rgba(150,100,200,.3);
+}
+.st-close:active{transform:scale(.96)}
+
+.st-canvas-wrap{
+  flex:1;overflow:hidden;position:relative;cursor:grab;background:linear-gradient(45deg,#05030c 0%,#0a070f 50%,#08060e 100%);
+}
+.st-canvas-wrap:active{cursor:grabbing}
+.st-canvas{position:absolute;will-change:transform}
+.st-svg{position:absolute;width:1200px;height:900px;pointer-events:none}
+
+/* Skill nodes */
+.sn{
+  position:absolute;width:88px;height:88px;
+  background:radial-gradient(ellipse at 40% 40%,rgba(100,80,150,.15),rgba(60,40,100,.05));
+  border:1px solid rgba(120,100,160,.3);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  z-index:5;transition:all .25s;cursor:default;
+  box-shadow:0 0 20px rgba(100,80,150,.1),inset 0 0 20px rgba(150,120,200,.05);
+}
+
+.sn::before{
+  content:'';position:absolute;inset:-1px;border-radius:50%;
+  background:linear-gradient(135deg,rgba(150,120,200,.2),rgba(100,80,150,.1),rgba(100,100,180,.15));
+  opacity:0;transition:opacity .3s;
+}
+
+.sn::after{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle,rgba(200,150,255,.3),transparent 70%);
+  opacity:0;z-index:-1;
+}
+
+.sn.unlocked{
+  background:radial-gradient(ellipse at 40% 40%,rgba(150,120,200,.25),rgba(100,80,160,.12));
+  border-color:rgba(150,120,200,.5);
+  box-shadow:0 0 30px rgba(150,120,200,.25),inset 0 0 25px rgba(180,150,220,.08);
+}
+
+.sn.unlocked:hover{
+  border-color:rgba(180,150,220,.8);
+  box-shadow:0 0 40px rgba(180,150,220,.4),inset 0 0 30px rgba(180,150,220,.12);
+}
+
+.sn.unlocked:hover::before{opacity:1}
+.sn.unlocked:hover::after{opacity:1;animation:skill-glow 1.5s ease-in-out infinite}
+@keyframes skill-glow{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+
+.sn.maxed{
+  background:linear-gradient(135deg,rgba(200,150,0,.2),rgba(180,120,0,.15));
+  border-color:rgba(220,180,40,.6);
+  box-shadow:0 0 40px rgba(220,180,40,.35),0 0 80px rgba(200,150,0,.15),inset 0 0 30px rgba(220,200,100,.12);
+  animation:maxed-pulse 2s ease-in-out infinite;
+}
+@keyframes maxed-pulse{0%,100%{box-shadow:0 0 40px rgba(220,180,40,.35),0 0 80px rgba(200,150,0,.15),inset 0 0 30px rgba(220,200,100,.12)}50%{box-shadow:0 0 60px rgba(220,180,40,.5),0 0 120px rgba(200,150,0,.25),inset 0 0 40px rgba(240,220,120,.15)}}
+
+.sn.locked{
+  background:rgba(40,40,60,.4);border-color:rgba(80,80,120,.3);opacity:.35;
+  box-shadow:0 0 15px rgba(0,0,0,.4),inset 0 0 15px rgba(0,0,0,.2);
+}
+
+.sn-icon{font-size:28px;line-height:1;margin-bottom:2px}
+.sn-name{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#c8a8f0;text-align:center;font-weight:500}
+.sn-rank{font-size:8px;color:#a890d8;letter-spacing:.1em;margin-top:2px;font-family:'DM Mono',monospace}
+
+.sn-tooltip{
+  position:absolute;bottom:100%;left:50%;transform:translateX(-50%) translateY(-8px);
+  background:rgba(10,8,20,.95);border:1px solid rgba(150,120,200,.4);border-radius:4px;
+  padding:12px 14px;min-width:160px;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;
+  z-index:100;backdrop-filter:blur(8px);box-shadow:0 0 20px rgba(100,80,150,.4),0 4px 12px rgba(0,0,0,.6);
+}
+
+.sn:hover .sn-tooltip,.sn.unlocked:hover .sn-tooltip{
+  opacity:1;transform:translateX(-50%) translateY(-12px);
+}
+
+.sn-tooltip-name{font-size:11px;font-weight:600;color:#e8d8ff;letter-spacing:.08em;margin-bottom:4px}
+.sn-tooltip-desc{font-size:8px;color:#9a8ab8;line-height:1.4;margin-bottom:6px;font-style:italic}
+.sn-tooltip-stat{font-size:9px;color:#c8a8f0;margin-bottom:6px;font-weight:500;letter-spacing:.05em}
+.sn-tooltip-cost{font-size:8px;color:#7a6a9a;letter-spacing:.05em}
+
+/* Skill tree lines */
+.st-svg line{
+  stroke:rgba(120,100,160,.25);stroke-width:2;opacity:.6;transition:all .3s;
+}
+
+.st-canvas:hover .st-svg line{opacity:.4}
+
+/* Connection animation on unlock */
+@keyframes line-glow{
+  0%{stroke-width:2;stroke:rgba(150,120,200,.5)}
+  100%{stroke-width:3;stroke:rgba(200,150,255,.2)}
+}
+
+/* Skill node */
+.sn{
+  position:absolute;width:88px;height:88px;border-radius:50%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  cursor:pointer;transition:transform .2s var(--ease-spring),box-shadow .3s;
+  border:2px solid #2a2040;background:#0e0b1a;
+  user-select:none;-webkit-user-select:none;
+}
+.sn:hover{transform:scale(1.12)}
+.sn.unlocked{border-color:#6040c0;background:#1a1030;box-shadow:0 0 20px rgba(96,64,192,.35)}
+.sn.unlocked:hover{transform:scale(1.15);box-shadow:0 0 36px rgba(96,64,192,.6)}
+.sn.maxed{border-color:#c8a0ff;background:#221840;box-shadow:0 0 28px rgba(200,160,255,.45),0 0 60px rgba(140,80,255,.2)}
+.sn.maxed:hover{box-shadow:0 0 44px rgba(200,160,255,.7),0 0 90px rgba(140,80,255,.35)}
+.sn.locked{opacity:.38;cursor:default}
+.sn.locked:hover{transform:none}
+.sn-icon{font-size:22px;line-height:1}
+.sn-name{font-size:7px;letter-spacing:.1em;text-transform:uppercase;color:#6050a0;text-align:center;line-height:1.2;padding:0 6px}
+.sn.unlocked .sn-name,.sn.maxed .sn-name{color:#a090d8}
+.sn-rank{font-size:8px;color:#4030a0;letter-spacing:.05em}
+.sn.unlocked .sn-rank{color:#8060d0}
+.sn.maxed .sn-rank{color:#c8a0ff}
+
+/* SVG connector lines */
+.st-svg{position:absolute;inset:0;pointer-events:none;overflow:visible}
+.st-line{stroke:#1c1828;stroke-width:1.5;fill:none;transition:stroke .4s,stroke-width .4s}
+.st-line.lit{stroke:#5040a0;stroke-width:2;filter:drop-shadow(0 0 3px rgba(80,64,160,.6))}
+.st-line.maxed{stroke:#a080e0;stroke-width:2.5;filter:drop-shadow(0 0 5px rgba(160,128,224,.7))}
+
+/* Skill tooltip */
+.sn-tooltip{
+  position:absolute;background:#0e0b1a;border:1px solid #2a2040;border-radius:4px;
+  padding:10px 14px;width:190px;pointer-events:none;z-index:10;
+  font-size:9px;letter-spacing:.1em;color:#8070b0;line-height:1.6;
+  transform:translate(-50%,-110%);top:0;left:50%;
+  opacity:0;transition:opacity .18s;
+  box-shadow:0 8px 32px rgba(0,0,0,.6);
+}
+.sn:hover .sn-tooltip{opacity:1}
+.sn-tooltip-name{font-family:'Cormorant Garamond',serif;font-size:14px;color:#c8b0ff;margin-bottom:4px;letter-spacing:.04em}
+.sn-tooltip-desc{color:#6050a0;margin-bottom:5px}
+.sn-tooltip-stat{color:#a080d8}
+.sn-tooltip-cost{margin-top:6px;color:#4a3880;border-top:1px solid #1c1828;padding-top:5px}
+
+/* ── TOAST ── */
+.toast-container{position:fixed;top:20px;right:20px;z-index:10000;display:flex;flex-direction:column;gap:7px;pointer-events:none}
+.toast{background:#1c1a17;color:#e8e4dc;border-radius:4px;padding:11px 18px;font-size:9px;letter-spacing:.14em;text-transform:uppercase;box-shadow:0 6px 28px rgba(0,0,0,.4);animation:toast-in .32s var(--ease-spring) forwards;max-width:300px;border-left:3px solid #444}
+.toast.out{animation:toast-out .28s ease forwards}
+.toast.legendary-toast{background:#150e00;border-left-color:#c8960a;color:#f0c040}
+.toast.mythic-toast   {background:#0e0014;border-left-color:#8800cc;color:#ee80ff}
+.toast.cursed-toast   {background:#0e0000;border-left-color:#660000;color:#cc3030}
+.toast.divine-toast   {background:#0e0c00;border-left-color:#ffd700;color:#ffe040}
+.toast.const-toast    {background:#060412;border-left-color:#6040c0;color:#b8a8e8}
+.toast.milestone-toast{background:#0a100a;border-left-color:#4a7a4a;color:#88cc88}
+.toast.rebirth-toast  {background:#120600;border-left-color:#c84000;color:#ff8040}
+@keyframes toast-in {from{transform:translateX(110%) scale(.85);opacity:0}to{transform:translateX(0) scale(1);opacity:1}}
+@keyframes toast-out{from{transform:translateX(0) scale(1);opacity:1}to{transform:translateX(110%) scale(.85);opacity:0}}
+
+/* ── SCROLLBARS ── */
+.page::-webkit-scrollbar,.shop-grid::-webkit-scrollbar,.const-body::-webkit-scrollbar{width:3px}
+.page::-webkit-scrollbar-thumb,.shop-grid::-webkit-scrollbar-thumb,.const-body::-webkit-scrollbar-thumb{background:#d8d4ce;border-radius:2px}
+.page::-webkit-scrollbar-track,.shop-grid::-webkit-scrollbar-track,.const-body::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+
+<div class="flash-overlay" id="flashOverlay"></div>
+<div class="toast-container" id="toastContainer"></div>
+
+<header>
+  <p class="eyebrow">Random Name Generator</p>
+  <h1>Name Roller</h1>
+</header>
+
+<div class="streak-row" id="streakRow">
+  <span class="streak-label">Streak</span>
+  <div class="streak-pips" id="streakPips">
+    <div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+  </div>
+  <span class="streak-bonus" id="streakBonus" style="opacity:0"></span>
+</div>
+
+<div class="card idle-pulse" id="card">
+  <span class="new-badge" id="newBadge">New!</span>
+  <span class="rarity-badge" id="rarityBadge"></span>
+  <div class="result-name idle" id="resultName">press roll</div>
+  <div class="roll-counter" id="rollCounter"></div>
+</div>
+
+<div class="history-tray" id="historyTray"></div>
+
+<div class="btn-row">
+  <button class="btn btn-primary style-classic" id="rollBtn" onclick="handleRollClick(event)">Roll</button>
+  <button class="btn btn-secondary" onclick="openBook()">Name Book</button>
+  <button class="btn btn-secondary btn-icon" onclick="openShop()" title="Style Shop">🎨</button>
+</div>
+
+<button class="rebirth-btn" id="rebirthBtn" onclick="startRebirthCutscene()">🔥 Rebirth — Ascend Beyond</button>
+
+<div class="sub-row">
+  <button class="sub-btn" onclick="openConstellation()">✦ Constellation Map</button>
+</div>
+
+<div class="save-status" id="saveStatus"></div>
+
+<!-- BOOK -->
+<div class="overlay" id="bookOverlay" onclick="if(event.target===this)closeBook()">
+  <div class="book">
+    <div class="book-cover" id="bookCover" onclick="flipCover()">
+      <div class="bc-line"></div>
+      <div class="bc-title">Name Book</div>
+      <div class="bc-sub">Collected Names</div>
+      <div class="bc-line"></div>
+      <div class="bc-tap">Tap to open</div>
+    </div>
+    <div class="book-pages">
+      <div class="book-header">
+        <span class="book-title">Name Book</span>
+        <button class="book-close" onclick="closeBook()">Close</button>
+      </div>
+      <div class="book-rebirth-banner" id="bookRebirthBanner">
+        <div class="brb-text">You have collected over 100 names.<br><span class="brb-count" id="brbCount">0</span> names ready to ascend.</div>
+        <button class="brb-btn" onclick="closeBook();startRebirthCutscene()">🔥 Rebirth</button>
+      </div>
+      <div class="book-tabs">
+        <button class="tab-btn active" onclick="switchTab('all',this)">All</button>
+        <button class="tab-btn" onclick="switchTab('common',this)">Common</button>
+        <button class="tab-btn" onclick="switchTab('uncommon',this)">Uncommon</button>
+        <button class="tab-btn" onclick="switchTab('rare',this)">Rare</button>
+        <button class="tab-btn" onclick="switchTab('legendary',this)">Legendary</button>
+        <button class="tab-btn" onclick="switchTab('mythic',this)">✦ Mythic</button>
+        <button class="tab-btn" onclick="switchTab('cursed',this)">☠ Cursed</button>
+        <button class="tab-btn" onclick="switchTab('divine',this)">✧ Divine</button>
+      </div>
+      <div class="page-wrap"><div class="page visible" id="pageContent"></div></div>
+      <div class="book-footer">
+        <span class="book-count" id="bookCount"></span>
+        <div class="page-nav">
+          <button id="prevBtn" onclick="prevPage()" disabled>&#8592;</button>
+          <button id="nextBtn" onclick="nextPage()">&#8594;</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STYLE SHOP — driven by button-styles.js -->
+<div class="overlay" id="shopOverlay" onclick="if(event.target===this)closeShop()"></div>
+
+<!-- button-styles.js: defines all styles, injects CSS, owns the shop -->
+<script src="button-styles.js"></script>
+
+<!-- CONSTELLATION -->
+<div class="overlay" id="constOverlay" onclick="if(event.target===this)closeConstellation()">
+  <div class="constellation-panel" onclick="event.stopPropagation()">
+    <div class="const-header">
+      <div>
+        <div class="const-title">Constellation Map</div>
+        <div class="const-sub">Complete a constellation to earn its title</div>
+      </div>
+      <button class="const-close" onclick="closeConstellation()">Close</button>
+    </div>
+    <div class="const-body" id="constBody"></div>
+    <div class="const-footer">
+      <span id="constProgress">0 constellations complete</span>
+      <span id="constTitles" class="const-complete-badge"></span>
+    </div>
+  </div>
+</div>
+
+<!-- REBIRTH CUTSCENE -->
+<div id="rebirthCutscene">
+  <div class="rb-fire-bg" id="rbFireBg"></div>
+  <div class="rb-name-pile" id="rbNamePile"></div>
+  <div class="rb-title" id="rbTitle">Reborn</div>
+  <div class="rb-subtitle" id="rbSubtitle">Your names return to the void</div>
+  <button class="rb-skip" onclick="skipRebirth()">Skip ›</button>
+</div>
+
+<!-- SKILL TREE -->
+<div class="skill-tree-overlay" id="skillTreeOverlay">
+  <div class="st-header">
+    <div class="st-title-block">
+      <div class="st-title">Ascension Tree</div>
+      <div class="st-subtitle" id="stSubtitle">Rebirth 0 — 0 skill points</div>
+    </div>
+    <div class="st-points-bar">
+      <div>
+        <div class="st-points">Points: <span id="stPoints">0</span></div>
+        <div class="st-points-label">available to spend</div>
+      </div>
+      <button class="st-close" onclick="closeSkillTree()">Close ✕</button>
+    </div>
+  </div>
+  <div class="st-canvas-wrap" id="stCanvasWrap">
+    <div class="st-canvas" id="stCanvas">
+      <svg class="st-svg" id="stSvg"></svg>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+const cfg={apiKey:"AIzaSyB98E7T3E3IY4fa6_KLOcoT__CiOcUn3LE",authDomain:"pulse-f5e93.firebaseapp.com",projectId:"pulse-f5e93",storageBucket:"pulse-f5e93.firebasestorage.app",messagingSenderId:"26109296510",appId:"1:26109296510:web:51ee51db5970e544b13d2f",measurementId:"G-JMDX0D9D69"};
+const app=initializeApp(cfg);
+const db=getFirestore(app);
+window._db=db;window._dbDoc=doc;window._dbGetDoc=getDoc;window._dbSetDoc=setDoc;window._dbReady=true;
+async function load(){
+  try{
+    const s=await getDoc(doc(db,"saves","player1"));
+    if(s.exists()){
+      const d=s.data();
+      if(d.collected) window.collected=d.collected;
+      if(d.totalRolls!=null) window.totalRolls=d.totalRolls;
+      if(d.activeStyle) window.activeStyle=d.activeStyle;
+      if(d.rollHistory) window.rollHistory=d.rollHistory;
+      if(d.rebirthCount!=null) window.rebirthCount=d.rebirthCount;
+      if(d.totalSkillPoints!=null) window.totalSkillPoints=d.totalSkillPoints;
+      if(d.spentSkillPoints!=null) window.spentSkillPoints=d.spentSkillPoints;
+      if(d.unlockedSkills) window.unlockedSkills=d.unlockedSkills;
+      updateRollCounter();
+      if(typeof updateButtonStyle==='function') updateButtonStyle();
+      renderPage();rebuildHistory();updateRebirthButton();
+      setStatus('saved','Collection loaded');setTimeout(()=>setStatus('',''),2000);
+    }
+  }catch(e){console.log(e)}
+}
+window._loadSave=load;load();
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DATA — NAMES
+// ═══════════════════════════════════════════════════════════
+const NAMES = {
+  common:[
+    "James","John","Robert","Michael","William","David","Richard","Joseph","Thomas","Charles",
+    "Mary","Patricia","Jennifer","Linda","Barbara","Susan","Jessica","Sarah","Karen","Lisa",
+    "Daniel","Matthew","Anthony","Donald","Mark","Paul","Steven","Andrew","Kenneth","Joshua",
+    "Kevin","Brian","George","Timothy","Ronald","Edward","Jason","Jeffrey","Ryan","Jacob",
+    "Gary","Nicholas","Eric","Jonathan","Stephen","Larry","Justin","Scott","Brandon","Benjamin",
+    "Emma","Olivia","Ava","Isabella","Sophia","Mia","Charlotte","Amelia","Harper","Evelyn",
+    "Abigail","Emily","Elizabeth","Sofia","Ella","Madison","Scarlett","Victoria","Aria","Grace",
+    "Chloe","Camila","Penelope","Riley","Layla","Lillian","Nora","Zoey","Hannah","Lucas",
+    "Ethan","Aiden","Owen","Caleb","Nathan","Isaac","Miles","Leo","Liam","Noah",
+    "Mason","Logan","Oliver","Elijah","Levi","Zoe","Lily","Aurora","Willow","Luna",
+    "Hazel","Stella","Violet","Daisy","Ruby","Iris","Ivy","Alice","Clara","Eleanor",
+    "Agnes","Peter","Simon","Patrick","Francis","Anne","Catherine","Margaret","Helen","Dorothy",
+    "Ruth","Martha","Joan","Frances","Jean","Betty","Carol","Sandra","Donna","Shirley",
+    "Ralph","Walter","Harold","Raymond","Frank","Arthur","Earl","Fred","Ernest","Mabel",
+    "Edith","Ethel","Mildred","Florence","Gladys","Edna","Vera","Bertha","Hilda","Myrtle",
+    "Connor","Dylan","Evan","Adrian","Cole","Brady","Garrett","Luca","Jaxon","Beau",
+    "Aubrey","Addison","Hailey","Allison","Savannah","Avery","Anna","Audrey","Skylar","Paisley",
+    "Tristan","Braden","Hayden","Grant","Hunter","Spencer","Preston","Colton","Weston","Reid",
+    "Felix","Jasmine","Greta","Colin","Douglas","Fiona","Gavin","Heather","Ian","Janet",
+    "Keith","Kyle","Lance","Marcus","Nathan","Oscar","Patrick","Quincy","Raymond","Samuel",
+    "Theodore","Ulysses","Victor","Walter","Xavier","Yancy","Zachary","Adam","Bennett","Charles",
+    "Derek","Eugene","Gregory","Harold","Irving","Jerome","Kenneth","Leopold","Marcus","Nathan",
+    "Oliver","Patrick","Quentin","Robert","Samuel","Theodore","Urban","Victor","Wallace","Xavier",
+    "Yvonne","Zoey","Abigail","Briana","Catherine","Deborah","Eleanor","Felicity","Georgia","Helena",
+    "Ivy","Jacqueline","Keisha","Leah","Monica","Nora","Olivia","Phyllis","Quinn","Rebecca",
+    "Sophia","Theresa","Ursula","Vanessa","Wendy","Ximena","Yasmine","Zara","Avery","Brooke",
+    "Morgan","Cameron","Jordan","Casey","Riley","Skyler","Taylor","Dakota","Quinn","Morgan",
+    "Rory","Sage","Blake","Drew","Riley","Phoenix","River","Storm","Winter","Sage",
+    "Forest","Storm","Sage","Vale","Meadow","Haven","Eden","Cove","Dale","Glen",
+    "Heath","Wyatt","Devon","Rowan","Sage","Vale","Orion","Phoenix","Storm","Winter",
+    "River","Indigo","Violet","Azure","Amber","Asher","Sage","Phoenix","River","Storm",
+    "Blake","Jordan","Morgan","Casey","Riley","Skyler","Taylor","Dakota","Quinn","Reese"
+  ],
+  uncommon:[
+    "Theodore","Sebastian","Dominic","Maxwell","Harrison","Nathaniel","Elliot","Jasper","Atticus","Emmett",
+    "Silas","Declan","Rowan","Finnegan","Callum","Sullivan","Beckett","Fletcher","Holden","Desmond",
+    "Margot","Vivienne","Genevieve","Cordelia","Rosalind","Beatrice","Cecelia","Adelaide","Isadora","Josephine",
+    "Evangeline","Arabella","Seraphina","Clementine","Wilhelmina","Octavia","Leonora","Celestine","Imogen","Elspeth",
+    "Aldric","Bramwell","Crispin","Edmund","Florian","Gideon","Hadrian","Ignatius","Jethro","Lysander",
+    "Merrick","Oberon","Phineas","Quentin","Raleigh","Thaddeus","Upton","Vaughn","Warwick","Xander",
+    "Yorick","Zebediah","Alaric","Bastian","Caius","Evander","Fenwick","Gilmore","Hawkins","Isambard",
+    "Jonquil","Kentworth","Lavinia","Montague","Neville","Orland","Quintus","Reginald","Sylvester","Tarrant",
+    "Ulrick","Wulfric","Alistair","Beaumont","Cormac","Dashiell","Eustace","Griffith","Humphrey","Ingram",
+    "Jarvis","Kendrick","Leopold","Mortimer","Norbert","Oswald","Pemberton","Radcliffe","Sterling","Tobias",
+    "Ulysses","Vespian","Westley","Xanthos","Yolanda","Zelda","Araminta","Belinda","Camellia","Daphne",
+    "Eugenia","Fenella","Griselda","Horatio","Imelda","Jocelyn","Kerensa","Leontine","Magdalene","Narcissa",
+    "Orinthia","Petronilla","Quintilla","Rosalba","Sophronia","Thalassa","Urania","Venetia","Winifred","Xanthe",
+    "Zenaide","Aldous","Barnabas","Cornelius","Demetrius","Endymion","Festus","Godwin","Hercules","Ignacio",
+    "Jacobus","Killian","Leander","Manfred","Newell","Oleander","Ptolemy","Ranulph","Septimus","Theron",
+    "Ambrose","Broderick","Casimir","Devlin","Erwin","Finnbar","Godfrey","Hendrick","Ives","Jebediah",
+    "Kestrel","Lowell","Marcheline","Norwood","Orton","Peregrine","Quillan","Ruthven","Salome","Torquil",
+    "Auberon","Balthazar","Callisto","Dashiell","Emerson","Fitzroy","Grayson","Hawthorne","Idris","Jericho",
+    "Kieran","Lysander","Matthias","Nathaniel","Orson","Preston","Quinton","Reeves","Sterling","Theron",
+    "Ulrich","Valentine","Wendell","Xenos","Yates","Zephyr","Alasdair","Bennington","Cornelius","Dashwood",
+    "Eberhard","Fitzgerald","Gideon","Hawthorne","Ignatius","Jasper","Kendrick","Leopold","Matthias","Newton",
+    "Orville","Percival","Quillian","Reginald","Sylvander","Thaddeus","Ulysses","Vaughn","Westcott","Xander"
+  ],
+  rare:[
+    "Aurelius","Balthazar","Caelum","Elowen","Fionn","Hawthorne","Isidore","Jareth","Keiran","Mordecai",
+    "Niall","Orion","Quillan","Remington","Stellan","Tarquin","Ulric","Vesper","Willoughby","Xiomara",
+    "Ysolde","Zephyrine","Breccan","Caelan","Devereux","Faustine","Hesper","Iolanthe","Jocasta","Keturah",
+    "Lysandra","Marisol","Nerissa","Ophelia","Quintessa","Rowena","Saoirse","Thessaly","Undine","Valentijn",
+    "Wisteria","Xanthippe","Zenobia","Amaranta","Bellatrix","Calixta","Delphine","Eudora","Fiametta","Galadriel",
+    "Hieronymus","Isolde","Kazimir","Liriel","Mireille","Odessa","Persephone","Rosamund","Silvanus","Ursula",
+    "Wraithborne","Xylander","Ysadora","Aelindra","Braxton","Cailleach","Elindra","Favian","Halvard","Iphigenia",
+    "Jovian","Kallistrate","Lachlan","Mairead","Nightshade","Oberyn","Peregrine","Raelindra","Tadhg","Ulrike",
+    "Valeriana","Winterbourne","Zarathos","Astraea","Branwen","Caelindra","Drusilla","Elarion","Faedryn","Hadassah",
+    "Indira","Jezabel","Kirathe","Lunaire","Morvenna","Nalindra","Onyxia","Parisienne","Queridwen","Ravindra",
+    "Shadowmere","Undrave","Vashti","Winterhawk","Xanthira","Zeraphine","Ambrosine","Beauregard","Celestia","Donatella",
+    "Gwenllian","Hieronima","Junipera","Kaedrith","Larindra","Morrigan","Nyxindra","Odalinde","Praxiteles","Quirindra",
+    "Saorindra","Talindra","Ulindra","Varindra","Windmere","Yalindra","Zaelindra","Aethindra","Blasindra","Craevindra",
+    "Duskweave","Evenfall","Frostweave","Grailborne","Halvindra","Ironwilde","Jadespire","Kelindra","Laveindra","Mirindra",
+    "Nightfall","Obsidian","Prismara","Quickthorn","Riven","Stormcaller","Thornwood","Umbriel","Vexan","Wychwood",
+    "Xaelan","Ylindra","Zephyra","Ashcroft","Brindlewood","Cloudpiercer","Darkmere","Ebonfall","Frostmere","Graymist",
+    "Avelind","Brinholm","Celestis","Dorenai","Etherial","Faelindor","Glimmora","Halcyon","Ilminster","Jadewar",
+    "Kaelith","Luminor","Miravelle","Noctara","Ophelion","Petravox","Quasar","Ravenvale","Sylvaine","Theodane",
+    "Unravel","Vaelindor","Wraithveil","Xandros","Yarethel","Zeitros","Aelindor","Bolthalor","Celestria","Dravior",
+    "Eltharis","Frostholm","Graylantern","Hivemere","Ironholm","Jadestone","Kristalmir","Lumenvale","Moonshard","Nightpeak",
+    "Obsidian","Pearlheim","Quartzdon","Ravencrest","Silvermere","Thornholm","Urbancrest","Voidstone","Winterpeak","Xenyth"
+  ],
+  legendary:[
+    "Achilles","Brennius","Cassivellaunus","Etherion","Forsvar","Galahad","Havelock","Iamblichus","Jadwiga","Kerridwen",
+    "Laoghaire","Maelgwn","Niamh","Ossian","Pryderi","Quilaztli","Ragnvald","Sigrdriva","Taranis","Ulfryn",
+    "Vercingetorix","Wynflaed","Xochiquetzal","Ymoja","Zosime","Aethelflaed","Brandubh","Conchobar","Draupnir","Eorlmund",
+    "Fionnuala","Gwydion","Iarfhlaith","Kullervo","Medraut","Nothhelm","Oisín","Prasutagus","Rhiannon","Sigeberht",
+    "Tigernach","Vasilikos","Wyrdfell","Xolotl","Ynyr","Zarathael","Aeducanthe","Britomart","Caratacus","Deirdre",
+    "Ethelberht","Fáelán","Grainne","Hrodulf","Iseult","Jarlath","Kentigern","Llywelyn","Méabh","Nuadha",
+    "Odhrán","Pádraigín","Ruadhán","Scáthach","Tighearnach","Uallach","Vésteinn","Wulfhere","Xochitl","Yggdrasil",
+    "Zacharundas","Ambrosius","Boudicca","Cunobelin","Dubhthach","Étaín","Feradach","Goídel","Haakon","Ingimundur",
+    "Kolgríma","Landvættr","Magnusson","Nerthus","Óðinn","Pelagianos","Queztlcoatl","Rognvaldr","Suibhne","Thorvaldsen",
+    "Urðarbrunnr","Vǫluspá","Wulfnoth","Xerxandrel","Yngvarr","Zealothael","Annwfyn","Brocéliande","Cuchulain","Daghdha",
+    "Epimetheus","Fomorian","Gilgamesh","Herculion","Inanna","Jörmungandr","Kurgan","Labyrintheon","Marduk","Niflheimr",
+    "Orpheus","Persia","Quetzal","Ragnarök","Surtr","Thyatira","Utgard","Vanaheim","Wodenaz","Xibalba",
+    "Aelithren","Beowulf","Caldris","Dartheron","Eldorien","Faelion","Grendamir","Halcyon","Ironheart","Jaxarion",
+    "Kaelindor","Lionarch","Mytharis","Norduen","Orinauth","Palomis","Questrian","Ravindor","Stalwart","Thorgrim",
+    "Untheron","Valdrin","Warbrand","Xanthor","Yeomarch","Zestral","Aldrun","Braethel","Celandor","Drekhor",
+    "Aelindeth","Baldrin","Calthor","Drakendor","Eldaron","Faelondor","Grindmaster","Hardorn","Ironveil","Jadeborn",
+    "Kingborn","Lordfire","Mythborn","Nightborn","Ordermancer","Prideborn","Questborn","Reignborne","Stormborn","Throneborn"
+  ],
+  mythic:[
+    "Aion","Brahmastra","Chronoveil","Dawnweaver","Ethernus","Fatewarden","Grimoire","Hyperaxis",
+    "Infinara","Jormungand","Kosmoveil","Lumendrift","Maelstromis","Nexarion","Omegathread","Phantasmal",
+    "Quilovein","Realmshard","Soularion","Timebreaker","Umbraveil","Voidweaver","Worldender","Xenomancer",
+    "Yggdrasalis","Zeroveil","Aethermind","Boundless","Cosmosfire","Dreamblade","Eternus","Fateweave",
+    "Godthread","Horizonfall","Infinitum","Judgemend","Kingdomfall","Lastlight","Moonfracture","Nightwarden",
+    "Omniveil","Primeordial","Questwarden","Realmseed","Soulfire","Truthweave","Ultraveil","Voidmind",
+    "Worldsoul","Xenolith","Yrthemis","Zerospace"
+  ],
+  cursed:[
+    "Malachar","Vexathorn","Grimdark","Sorrowveil","Doomweave","Hexenbane","Plaguewick","Wrathbourne",
+    "Netherscar","Oblithrax","Rottmourne","Scarrowend","Tormentis","Unhallow","Venomblight","Wretchworn",
+    "Xanathos","Yearndarke","Zymuroth","Abysswalker","Blight","Curseweave","Dreadmourne","Evildawn",
+    "Fleshbane","Goreblight","Harrowing","Infernalis","Jadewither","Killjoy","Lamentus","Miseryborne",
+    "Nightblight","Oathbreaker","Painweave","Quisitor","Ruinmark","Soulrend","Thornveil","Undying",
+    "Vileweave","Woeborn","Xenodread","Yowling","Zerolight","Ashenblight","Bloodweave","Crimsonveil",
+    "Deathrattle","Embervoid","Flaymark","Graveweave","Hellscorn","Ichorbleed","Jaderot","Knellborn",
+    "Lichscream","Maggotfang","Necroweave","Oblivion","Putrescent","Quagmired","Rottenmaw","Scourgeborn",
+    "Shatterbone","Thornthorn","Uksorrow","Veilbreak","Woundweave","Xenodeath","Yowldark","Zerothane",
+    "Cragrot","Doomspire","Eterbleach","Forblight","Goremark","Hateveil","Ironcurse","Jadebreak"
+  ],
+  divine:[
+    "Auranthos","Blessward","Celestius","Dawnhallow","Etherlight","Faithwarden","Gloriana","Holythread",
+    "Illumina","Justiveil","Kindleblessed","Luminos","Miraculum","Novastorm","Omenlight","Pureheart",
+    "Quoralis","Radiance","Sanctiveil","Theolux","Ultralight","Vestalis","Wordkeeper","Xenolight",
+    "Yearnsong","Zephyrblessed","Angelicore","Benedictus","Celestiveil","Dawnborn","Eternalight","Faithborn",
+    "Gloryveil","Holyborn","Illuminaveil","Justiciara","Kindlelux","Luminara","Miracleveil","Nobilis",
+    "Omnilight","Puritveil","Quoralux","Radianceveil","Sacredborn","Theolum","Ultravestal","Vestibless",
+    "Wordveil","Xenobless","Yearnlight","Zephyrlight","Arcantos","Blessed","Celestar","Divinara",
+    "Eternabless","Faithlux","Gloralux","Holylight","Illuminus","Justblessed","Kindleveil","Luminous",
+    "Sanctborn","Divinelight","Blessborn","Holyshine","Radiantborn","Lightbringer","Pureborn","Sanctlight"
+  ]
+};
+
+const RARITY_CONFIG = {
+  common:    {label:"Common",    color:"#888",    textColor:"#555",    bg:"#efefef"},
+  uncommon:  {label:"Uncommon",  color:"#4a7a4a", textColor:"#3a6a3a", bg:"#dceadc"},
+  rare:      {label:"Rare",      color:"#2a4a8a", textColor:"#1a3a7a", bg:"#d4e0f0"},
+  legendary: {label:"Legendary", color:"#9a6010", textColor:"#7a4a00", bg:"#f0e4cc"},
+  mythic:    {label:"✦ Mythic",  color:"#8800cc", textColor:"#6600aa", bg:"#ecdcf8"},
+  cursed:    {label:"☠ Cursed",  color:"#880000", textColor:"#660000", bg:"#f0d4d4"},
+  divine:    {label:"✧ Divine",  color:"#b8860b", textColor:"#8b6914", bg:"#fffde0"}
+};
+
+const CONSTELLATIONS = [
+  {id:"orion",    name:"Orion",       title:"The Hunter",        names:["James","John","Robert","Michael","William","David","Richard","Joseph","Thomas","Charles"]},
+  {id:"pleiades", name:"Pleiades",    title:"The Seven Sisters", names:["Mary","Patricia","Jennifer","Linda","Barbara","Susan","Jessica","Sarah","Karen","Lisa"]},
+  {id:"cassio",   name:"Cassiopeia",  title:"The Queen",         names:["Emma","Olivia","Ava","Isabella","Sophia","Mia","Charlotte","Amelia","Harper","Evelyn"]},
+  {id:"ursa",     name:"Ursa Major",  title:"The Wanderer",      names:["Theodore","Sebastian","Dominic","Maxwell","Harrison","Nathaniel","Elliot","Jasper","Atticus","Emmett"]},
+  {id:"lyra",     name:"Lyra",        title:"The Songweaver",    names:["Margot","Vivienne","Genevieve","Cordelia","Rosalind","Beatrice","Cecelia","Adelaide","Isadora","Josephine"]},
+  {id:"draco",    name:"Draco",       title:"The Dragonbound",   names:["Aurelius","Balthazar","Caelum","Fionn","Hawthorne","Isidore","Jareth","Mordecai","Orion","Quillan"]},
+  {id:"phoenix",  name:"Phoenix",     title:"The Reborn",        names:["Lysandra","Nerissa","Ophelia","Quintessa","Rowena","Saoirse","Thessaly","Vesper","Wisteria","Zenobia"]},
+  {id:"cygnus",   name:"Cygnus",      title:"The Celestial",     names:["Achilles","Galahad","Niamh","Ossian","Rhiannon","Sigrdriva","Taranis","Wynflaed","Pryderi","Oisín"]},
+  {id:"void_c",   name:"The Void",    title:"Voidwalker",        names:["Aion","Chronoveil","Ethernus","Infinara","Nexarion","Omegathread","Voidweaver","Worldender","Zeroveil","Timebreaker"]},
+  {id:"abyss_c",  name:"The Abyss",   title:"Cursed One",        names:["Malachar","Vexathorn","Grimdark","Sorrowveil","Doomweave","Hexenbane","Plaguewick","Wrathbourne","Netherscar","Oblithrax"]},
+  {id:"divine_c", name:"Empyrean",    title:"Blessed of Light",  names:["Auranthos","Blessward","Celestius","Dawnhallow","Etherlight","Faithwarden","Gloriana","Holythread","Illumina","Justiveil"]}
+];
+
+// BUTTON_STYLES loaded from button-styles.js
+
+const MILESTONES = [1,10,25,50,100,250,500];
+
+// ═══════════════════════════════════════════════════════════
+// SKILL TREE DATA
+// ═══════════════════════════════════════════════════════════
+// Layout: cx,cy are center coords in the canvas (1200x900 canvas)
+const SKILL_NODES = [
+  // ROOT
+  { id:"root",     icon:"✦",  name:"Ascendant",      desc:"The root of all power. You have been reborn.",
+    x:600, y:60,  maxRank:1, cost:0, requires:[],
+    effect:"Unlocks the Ascension Tree" },
+
+  // Tier 1 (3 branches)
+  { id:"lucky",    icon:"🍀", name:"Fortune's Hand",  desc:"Fate favors the bold.",
+    x:300, y:180, maxRank:5, cost:1, requires:["root"],
+    effect:"+2% chance of rare+ per rank" },
+  { id:"collector",icon:"📖", name:"Archivist",       desc:"Names flow to you like rivers to the sea.",
+    x:600, y:180, maxRank:5, cost:1, requires:["root"],
+    effect:"+5 name capacity shown per rank" },
+  { id:"pity",     icon:"⚖️", name:"Mercy of Fate",   desc:"The long wait ends sooner.",
+    x:900, y:180, maxRank:5, cost:1, requires:["root"],
+    effect:"-2 pity counter threshold per rank" },
+
+  // Tier 2
+  { id:"mythseeк", icon:"🌀", name:"Myth Seeker",     desc:"Draw the mythic from the aether.",
+    x:150, y:320, maxRank:3, cost:2, requires:["lucky"],
+    effect:"+0.15% mythic chance per rank" },
+  { id:"streak",   icon:"🔥", name:"Inferno Streak",  desc:"Streaks burn hotter and longer.",
+    x:300, y:320, maxRank:4, cost:2, requires:["lucky"],
+    effect:"Streak bonus applies at 2 instead of 3" },
+  { id:"divseek",  icon:"✧",  name:"Divine Seeker",   desc:"The heavens open to the worthy.",
+    x:500, y:320, maxRank:3, cost:2, requires:["collector"],
+    effect:"+0.1% divine chance per rank" },
+  { id:"hoard",    icon:"🏛️", name:"Hoarder",         desc:"Your collection grows beyond measure.",
+    x:700, y:320, maxRank:3, cost:2, requires:["collector"],
+    effect:"Milestone rewards doubled per rank" },
+  { id:"pityleg",  icon:"👑", name:"Kingly Wait",     desc:"Legends come to those who persist.",
+    x:900, y:320, maxRank:3, cost:2, requires:["pity"],
+    effect:"-5 legendary pity threshold per rank" },
+  { id:"cursesense",icon:"☠️",name:"Curse Sense",     desc:"You can smell the rot coming.",
+    x:1050,y:320, maxRank:3, cost:2, requires:["pity"],
+    effect:"+0.3% cursed chance per rank" },
+
+  // Tier 3
+  { id:"voidcall", icon:"🌌", name:"Void Call",       desc:"The void answers your summons.",
+    x:150, y:480, maxRank:2, cost:3, requires:["mythseeк"],
+    effect:"+0.5% mythic chance; flash lasts longer" },
+  { id:"heatwave", icon:"💫", name:"Heatwave",        desc:"The streak never dies.",
+    x:300, y:480, maxRank:3, cost:3, requires:["streak"],
+    effect:"Streak resets to 2 instead of 0 on break" },
+  { id:"radiance", icon:"☀️", name:"Radiance",        desc:"Light itself bends to collect you.",
+    x:500, y:480, maxRank:2, cost:3, requires:["divseek"],
+    effect:"+0.3% divine chance; golden flash unlocked" },
+  { id:"archive2", icon:"📚", name:"Grand Archive",   desc:"A monument to names past.",
+    x:700, y:480, maxRank:2, cost:3, requires:["hoard"],
+    effect:"+10 names shown per page per rank" },
+  { id:"quickpity",icon:"⚡", name:"Accelerated Fate",desc:"The wheel turns faster.",
+    x:900, y:480, maxRank:2, cost:3, requires:["pityleg"],
+    effect:"-8 rare pity threshold per rank" },
+  { id:"darkbloom",icon:"🩸", name:"Dark Bloom",      desc:"Cursed names bloom from the darkness.",
+    x:1050,y:480, maxRank:2, cost:3, requires:["cursesense"],
+    effect:"Cursed names grant +1 bonus streak" },
+
+  // Tier 4 (deeper, rarer)
+  { id:"timeless", icon:"⏳", name:"Timeless",        desc:"You exist beyond the cycle of chance.",
+    x:225, y:640, maxRank:1, cost:5, requires:["voidcall","heatwave"],
+    effect:"Every 50 rolls guaranteed a legendary+" },
+  { id:"godtouch", icon:"🌟", name:"God's Touch",     desc:"Divine and mythic breathe together.",
+    x:600, y:640, maxRank:1, cost:5, requires:["radiance","archive2"],
+    effect:"+1% divine chance; mythic+divine share pity" },
+  { id:"fateless", icon:"🎲", name:"Fateless",        desc:"Randomness bows to your will.",
+    x:975, y:640, maxRank:1, cost:5, requires:["quickpity","darkbloom"],
+    effect:"All pity counters reduced by half permanently" },
+
+  // APEX
+  { id:"apex",     icon:"👁️", name:"The Nameless One",desc:"You have transcended names themselves.",
+    x:600, y:800, maxRank:1, cost:8, requires:["timeless","godtouch","fateless"],
+    effect:"All rarities +50% chance; double skill points on next rebirth" }
+];
+
+const SKILL_CONNECTIONS = [
+  ["root","lucky"],["root","collector"],["root","pity"],
+  ["lucky","mythseeк"],["lucky","streak"],
+  ["collector","divseek"],["collector","hoard"],
+  ["pity","pityleg"],["pity","cursesense"],
+  ["mythseeк","voidcall"],["streak","heatwave"],["streak","voidcall"],
+  ["divseek","radiance"],["hoard","archive2"],["hoard","radiance"],
+  ["pityleg","quickpity"],["cursesense","darkbloom"],
+  ["voidcall","timeless"],["heatwave","timeless"],
+  ["radiance","godtouch"],["archive2","godtouch"],
+  ["quickpity","fateless"],["darkbloom","fateless"],
+  ["timeless","apex"],["godtouch","apex"],["fateless","apex"]
+];
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+window.collected        = {};
+window.totalRolls       = 0;
+window.activeStyle      = "classic";
+window.rollHistory      = [];
+window.rebirthCount     = 0;
+window.totalSkillPoints = 0;
+window.spentSkillPoints = 0;
+window.unlockedSkills   = {}; // {nodeId: rank}
+
+let currentTab   = 'all';
+let currentPage  = 0;
+let coverFlipped = false;
+let isRolling    = false;
+let saveTimer    = null;
+let streak       = 0;
+let lastRarity   = null;
+let pityRare     = 0;
+let pityLeg      = 0;
+let completedConstellations = new Set();
+let rebirthCutsceneActive = false;
+const NAMES_PER_PAGE = 30;
+const allNamesFlat = () => Object.values(NAMES).flat();
+
+// ═══════════════════════════════════════════════════════════
+// KEYBOARD
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeBook(); closeShop(); closeConstellation();
+    if (document.getElementById('skillTreeOverlay').classList.contains('active')) closeSkillTree();
+    return;
+  }
+  if ((e.key === ' ' || e.key === 'Enter') && !document.querySelector('.overlay.open') &&
+      !document.getElementById('skillTreeOverlay').classList.contains('active')) {
+    e.preventDefault(); doRoll();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// ROLL
+// ═══════════════════════════════════════════════════════════
+function getSkillBonus(id) {
+  return (window.unlockedSkills[id] || 0);
+}
+
+function rollWeightedRarity() {
+  pityRare++; pityLeg++;
+  const pityLegThresh = 80 - (getSkillBonus('pityleg') * 5) - (getSkillBonus('fateless') ? 40 : 0);
+  const pityRareThresh= 25 - (getSkillBonus('quickpity') * 8) - (getSkillBonus('fateless') ? 12 : 0);
+  if (pityLeg >= Math.max(pityLegThresh, 20)) { pityLeg=0; pityRare=0; return "legendary"; }
+  if (pityRare >= Math.max(pityRareThresh, 8)) { pityRare=0; return "rare"; }
+
+  const bonus = streak >= 5 ? 0.6 : streak >= (getSkillBonus('streak') ? 2 : 3) ? 0.3 : 0;
+  const r = Math.random() * 100;
+  const mythicBonus  = getSkillBonus('mythseeк') * 0.15 + getSkillBonus('voidcall') * 0.5 + (getSkillBonus('apex') ? 50 : 0) * 0.01 * 0.4;
+  const divineBonus  = getSkillBonus('divseek') * 0.1 + getSkillBonus('radiance') * 0.3 + (getSkillBonus('godtouch') ? 1 : 0) + (getSkillBonus('apex') ? 50 : 0) * 0.01 * 0.3;
+  const cursedBonus  = getSkillBonus('cursesense') * 0.3 + (getSkillBonus('apex') ? 50 : 0) * 0.01 * 0.15;
+  const luckyBonus   = getSkillBonus('lucky') * 0.02;
+
+  if (r < 0.15 + divineBonus)                   return "divine";
+  if (r < 0.15 + divineBonus + 0.4 + mythicBonus) return "mythic";
+  if (r < 0.15 + divineBonus + 0.4 + mythicBonus + 1.5 + cursedBonus) return "cursed";
+  if (r < 0.15 + divineBonus + 0.4 + mythicBonus + 1.5 + cursedBonus + 4 + bonus + luckyBonus*3) return "legendary";
+  if (r < 0.15 + divineBonus + 0.4 + mythicBonus + 1.5 + cursedBonus + 4 + bonus + luckyBonus*3 + 16 + bonus*2 + luckyBonus*4) return "rare";
+  if (r < 56 + bonus) return "uncommon";
+  return "common";
+}
+
+function rollName() {
+  const rarity = rollWeightedRarity();
+  const pool = NAMES[rarity];
+  return { name: pool[Math.floor(Math.random() * pool.length)], rarity };
+}
+
+function handleRollClick(e) {
+  const btn = e.currentTarget;
+  const r = document.createElement('div');
+  r.className = 'ripple';
+  const rect = btn.getBoundingClientRect();
+  const sz = Math.max(rect.width, rect.height);
+  r.style.cssText = `width:${sz}px;height:${sz}px;left:${e.clientX-rect.left-sz/2}px;top:${e.clientY-rect.top-sz/2}px`;
+  btn.appendChild(r);
+  setTimeout(() => r.remove(), 550);
+  doRoll();
+}
+
+function doRoll() {
+  if (isRolling) return;
+  isRolling = true;
+
+  const el    = document.getElementById('resultName');
+  const badge = document.getElementById('rarityBadge');
+  const card  = document.getElementById('card');
+  const nb    = document.getElementById('newBadge');
+
+  badge.className = 'rarity-badge';
+  card.className  = 'card';
+  nb.classList.remove('show');
+
+  const names = allNamesFlat();
+  let phase = 'fast', ticks = 0;
+  const phaseTicks = { fast: 10 + Math.floor(Math.random()*6), mid: 5, slow: 4 };
+
+  el.className = 'result-name spin-fast';
+  el.textContent = names[Math.floor(Math.random()*names.length)];
+
+  const ticker = setInterval(() => {
+    el.textContent = names[Math.floor(Math.random()*names.length)];
+    ticks++;
+    if (phase === 'fast' && ticks >= phaseTicks.fast) {
+      phase = 'mid'; ticks = 0; el.className = 'result-name spin-mid';
+    } else if (phase === 'mid' && ticks >= phaseTicks.mid) {
+      phase = 'slow'; ticks = 0; el.className = 'result-name spin-slow';
+    } else if (phase === 'slow' && ticks >= phaseTicks.slow) {
+      clearInterval(ticker); finalise();
+    }
+  }, phase === 'fast' ? 55 : 90);
+
+  function finalise() {
+    const { name, rarity } = rollName();
+    const isNew = !window.collected[name];
+    window.collected[name] = rarity;
+    window.totalRolls++;
+
+    window.rollHistory.unshift({ name, rarity });
+    if (window.rollHistory.length > 5) window.rollHistory.pop();
+    rebuildHistory();
+
+    updateRollCounter();
+    checkMilestone(window.totalRolls);
+    updateRebirthButton();
+
+    if (rarity === lastRarity && rarity !== 'common') streak++;
+    else streak = (rarity !== 'common') ? 1 : 0;
+    // Dark bloom: cursed resets streak to 1 instead of 0
+    if (rarity === 'cursed' && getSkillBonus('darkbloom')) streak = Math.max(streak, 1);
+    lastRarity = rarity;
+    updateStreakUI(rarity);
+
+    const cfg = RARITY_CONFIG[rarity];
+    el.className = `result-name rarity-${rarity} landing`;
+    el.textContent = name;
+
+    badge.textContent = cfg.label;
+    badge.style.background = cfg.bg;
+    badge.style.color = cfg.textColor;
+    badge.className = 'rarity-badge visible';
+    card.className  = `card rarity-${rarity}`;
+
+    if (isNew) { nb.classList.add('show'); setTimeout(()=>nb.classList.remove('show'), 2600); }
+
+    if (rarity === 'divine') {
+      triggerFlash('divine-flash');
+      spawnParticles(card, 40, ['#ffd700','#ffe680','#fff7a0','#ffec00','#fffde0','#ffcc00','#ffffff']);
+      toast(`✧ Divine! ${name}`, 'divine-toast');
+    } else if (rarity === 'mythic') {
+      triggerFlash('mythic-flash');
+      spawnParticles(card, 32, ['#ff00ff','#cc00ff','#ff44ff','#8800ff','#ffffff','#ff88ff']);
+      toast(`✦ Mythic! ${name}`, 'mythic-toast');
+    } else if (rarity === 'legendary') {
+      triggerFlash('legendary-flash');
+      spawnParticles(card, 24, ['#f0c040','#ff80c0','#80c0ff','#c080ff','#ffffff','#ffd080']);
+      if (isNew) toast(`✦ Legendary! ${name}`, 'legendary-toast');
+    } else if (rarity === 'cursed') {
+      triggerFlash('cursed-flash');
+      spawnParticles(card, 16, ['#8b0000','#cc0000','#400000','#ff4444','#660000']);
+      toast(`☠ Cursed… ${name}`, 'cursed-toast');
+    } else if (rarity === 'rare' && isNew) {
+      spawnParticles(card, 10, ['#4080c0','#80b0f0','#c0d8ff']);
+    }
+
+    checkConstellations(name);
+    setTimeout(() => { isRolling = false; }, 320);
+    scheduleSave();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// REBIRTH BUTTON
+// ═══════════════════════════════════════════════════════════
+function updateRebirthButton() {
+  const count = Object.keys(window.collected).length;
+  const btn = document.getElementById('rebirthBtn');
+  if (count >= 100) {
+    btn.classList.add('show');
+  } else {
+    btn.classList.remove('show');
+  }
+  // Update book banner
+  const banner = document.getElementById('bookRebirthBanner');
+  const brbCount = document.getElementById('brbCount');
+  if (count >= 100) {
+    banner.classList.add('show');
+    brbCount.textContent = count;
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// REBIRTH CUTSCENE
+// ═══════════════════════════════════════════════════════════
+function startRebirthCutscene() {
+  const names = Object.keys(window.collected);
+  if (names.length < 100) return;
+
+  rebirthCutsceneActive = true;
+  const cs = document.getElementById('rebirthCutscene');
+  const pile = document.getElementById('rbNamePile');
+  const title = document.getElementById('rbTitle');
+  const sub = document.getElementById('rbSubtitle');
+  const fireBg = document.getElementById('rbFireBg');
+
+  cs.classList.add('active');
+  pile.innerHTML = '';
+  title.classList.remove('show');
+  sub.classList.remove('show');
+  fireBg.classList.remove('show');
+
+  // Shuffle names
+  const shuffled = [...names].sort(() => Math.random() - 0.5);
+  const total = shuffled.length;
+  const displayCount = Math.min(total, 100);
+  const namesToShow = shuffled.slice(0, displayCount);
+
+  const RARITY_COLORS = {
+    common:'#aaa8a4', uncommon:'#4aaa3a', rare:'#3a5a8a',
+    legendary:'#e8960a', mythic:'#dd44ff', cursed:'#dd0000', divine:'#ffd700'
+  };
+
+  // Phase 1: Names rise up in a pile with stagger effect
+  namesToShow.forEach((name, i) => {
+    const el = document.createElement('div');
+    el.className = 'rb-name-item';
+    const rarity = window.collected[name] || 'common';
+    const col = RARITY_COLORS[rarity] || '#aaa';
+    const size = 11 + Math.random() * 18;
+    const tx = 50 + Math.random() * (window.innerWidth - 100);
+    const ty = 60 + Math.random() * (window.innerHeight * 0.6);
+    const rot = (Math.random() - 0.5) * 50;
+    const rot2 = (Math.random() - 0.5) * 20;
+    const delay = i * 18;
+    const dur = 0.7 + Math.random() * 0.6;
+
+    el.style.cssText = `
+      font-size:${size}px;color:${col};
+      left:${tx}px;top:${ty}px;
+      --dur:${dur}s;--delay:${delay}ms;
+      --rot:${rot}deg;--rot2:${rot2}deg;
+      --ty:${(Math.random()-0.5)*50}px;
+      --ease-spring:cubic-bezier(.34,1.56,.64,1);
+    `;
+    el.textContent = name;
+    pile.appendChild(el);
+  });
+
+  // Phase 2: Dramatic burn sequence with more particles
+  const burnStart = displayCount * 18 + 800;
+  setTimeout(() => {
+    fireBg.classList.add('show');
+    // Rapid fire effect at start
+    for(let p = 0; p < 15; p++) {
+      setTimeout(() => {
+        const flare = document.createElement('div');
+        flare.className = 'rb-ash-particle';
+        const sz = 8 + Math.random() * 12;
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 200 + Math.random() * 300;
+        flare.style.cssText = `
+          width:${sz}px;height:${sz}px;
+          left:calc(50% - ${sz/2}px);top:calc(50% - ${sz/2}px);
+          --adur:${2 + Math.random() * 1.5}s;
+          --adelay:${p * 50}ms;
+          --ax:${(Math.cos(angle)*dist).toFixed(0)}px;
+          --ay:${(Math.sin(angle)*dist).toFixed(0)}px;
+        `;
+        document.getElementById('rebirthCutscene').appendChild(flare);
+        setTimeout(() => flare.remove(), 3500 + p*50);
+      }, p * 30);
+    }
+    
+    // Burn individual names
+    pile.querySelectorAll('.rb-name-item').forEach((el, i) => {
+      el.style.setProperty('--bdur', (0.6 + Math.random() * 0.7) + 's');
+      el.style.setProperty('--bdelay', (i * 12) + 'ms');
+      setTimeout(() => el.classList.add('burning'), i * 12);
+      
+      // Ash particles from each name
+      for (let a = 0; a < 4; a++) {
+        const ash = document.createElement('div');
+        ash.className = 'rb-ash-particle';
+        const sz = 2.5 + Math.random() * 6;
+        const rect = el.getBoundingClientRect();
+        const ax = (Math.random() - 0.5) * 150;
+        const ay = -(80 + Math.random() * 180);
+        ash.style.cssText = `
+          width:${sz}px;height:${sz}px;
+          left:${rect.left + Math.random()*rect.width}px;
+          top:${rect.top}px;
+          --adur:${1.8 + Math.random() * 2.2}s;
+          --adelay:${i*12 + a*100}ms;
+          --ax:${ax}px;--ay:${ay}px;
+        `;
+        document.body.appendChild(ash);
+        setTimeout(() => ash.remove(), 4000 + i*12 + a*100);
+      }
+    });
+  }, burnStart);
+
+  // Phase 3: Title and subtitle with dramatic timing
+  const titleStart = burnStart + displayCount * 12 + 1000;
+  setTimeout(() => {
+    title.classList.add('show');
+    setTimeout(() => sub.classList.add('show'), 600);
+  }, titleStart);
+
+  // Phase 4: Transition to skill tree with fade
+  const skillStart = titleStart + 2600;
+  setTimeout(() => {
+    doRebirth();
+    cs.classList.remove('active');
+    rebirthCutsceneActive = false;
+    openSkillTree();
+  }, skillStart);
+}
+
+function skipRebirth() {
+  if (!rebirthCutsceneActive) return;
+  const cs = document.getElementById('rebirthCutscene');
+  cs.classList.remove('active');
+  rebirthCutsceneActive = false;
+  doRebirth();
+  openSkillTree();
+}
+
+function doRebirth() {
+  const nameCount = Object.keys(window.collected).length;
+  // Skill points: base 3 per 100 names, +1 per extra 10, multiplier if apex
+  let points = Math.floor(nameCount / 100) * 3 + Math.floor((nameCount % 100) / 10);
+  if (getSkillBonus('apex')) points *= 2;
+  window.totalSkillPoints += points;
+  window.rebirthCount++;
+  // Reset collection but keep rolls and skills
+  window.collected = {};
+  window.rollHistory = [];
+  pityRare = 0; pityLeg = 0; streak = 0; lastRarity = null;
+  updateRebirthButton();
+  updateRollCounter();
+  rebuildHistory();
+  renderPage();
+  const el = document.getElementById('resultName');
+  el.className = 'result-name idle';
+  el.textContent = 'press roll';
+  document.getElementById('rarityBadge').className = 'rarity-badge';
+  document.getElementById('card').className = 'card idle-pulse';
+  toast(`🔥 Rebirth ${window.rebirthCount}! +${points} skill points earned`, 'rebirth-toast');
+  scheduleSave();
+}
+
+// ═══════════════════════════════════════════════════════════
+// SKILL TREE
+// ═══════════════════════════════════════════════════════════
+let stDrag = { active:false, startX:0, startY:0, offsetX:0, offsetY:0 };
+let stOffset = { x: -200, y: -20 };
+
+function openSkillTree() {
+  const overlay = document.getElementById('skillTreeOverlay');
+  overlay.classList.add('active');
+  renderSkillTree();
+  setupSkillTreeDrag();
+  updateStHeader();
+}
+
+function closeSkillTree() {
+  document.getElementById('skillTreeOverlay').classList.remove('active');
+}
+
+function updateStHeader() {
+  const available = window.totalSkillPoints - window.spentSkillPoints;
+  document.getElementById('stPoints').textContent = available;
+  document.getElementById('stSubtitle').textContent =
+    `Rebirth ${window.rebirthCount} — ${window.totalSkillPoints} total points`;
+}
+
+function renderSkillTree() {
+  const canvas = document.getElementById('stCanvas');
+  const svg = document.getElementById('stSvg');
+
+  // Set canvas size
+  const W = 1400, H = 900;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  svg.setAttribute('width',  W);
+  svg.setAttribute('height', H);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  // Apply offset
+  canvas.style.transform = `translate(${stOffset.x}px,${stOffset.y}px)`;
+
+  // Clear
+  svg.innerHTML = '';
+  canvas.querySelectorAll('.sn').forEach(n => n.remove());
+
+  const available = window.totalSkillPoints - window.spentSkillPoints;
+
+  // Draw connections
+  SKILL_CONNECTIONS.forEach(([fromId, toId]) => {
+    const from = SKILL_NODES.find(n => n.id === fromId);
+    const to   = SKILL_NODES.find(n => n.id === toId);
+    if (!from || !to) return;
+    const fromRank = window.unlockedSkills[fromId] || 0;
+    const toRank   = window.unlockedSkills[toId]   || 0;
+    const fromMax  = SKILL_NODES.find(n => n.id === fromId)?.maxRank || 1;
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1', from.x); line.setAttribute('y1', from.y);
+    line.setAttribute('x2', to.x);   line.setAttribute('y2', to.y);
+    line.className.baseVal = `st-line${toRank > 0 ? (fromRank >= fromMax ? ' maxed' : ' lit') : ''}`;
+    svg.appendChild(line);
+  });
+
+  // Draw nodes
+  SKILL_NODES.forEach(node => {
+    const rank    = window.unlockedSkills[node.id] || 0;
+    const isMax   = rank >= node.maxRank;
+    const reqsMet = node.requires.every(r => (window.unlockedSkills[r] || 0) >= (SKILL_NODES.find(n=>n.id===r)?.maxRank || 1) || (window.unlockedSkills[r] || 0) > 0);
+    const canAfford = available >= node.cost;
+    const isLocked = !reqsMet && node.requires.length > 0;
+
+    const el = document.createElement('div');
+    el.className = 'sn' + (isMax ? ' maxed' : rank > 0 ? ' unlocked' : isLocked ? ' locked' : '');
+    el.style.cssText = `left:${node.x - 44}px;top:${node.y - 44}px`;
+
+    el.innerHTML = `
+      <span class="sn-icon">${node.icon}</span>
+      <span class="sn-name">${node.name}</span>
+      <span class="sn-rank">${node.maxRank > 1 ? `${rank}/${node.maxRank}` : (rank ? '✓' : '○')}</span>
+      <div class="sn-tooltip">
+        <div class="sn-tooltip-name">${node.name}</div>
+        <div class="sn-tooltip-desc">${node.desc}</div>
+        <div class="sn-tooltip-stat">${node.effect}</div>
+        <div class="sn-tooltip-cost">
+          ${isMax ? '✓ Fully Upgraded' :
+            isLocked ? '🔒 Unlock prerequisites first' :
+            !canAfford ? `Need ${node.cost} pts (have ${available})` :
+            `Cost: ${node.cost} point${node.cost>1?'s':''} — Click to upgrade`}
+        </div>
+      </div>
+    `;
+
+    if (!isMax && !isLocked && canAfford) {
+      el.addEventListener('click', () => upgradeSkill(node.id));
+      el.style.cursor = 'pointer';
+    }
+
+    canvas.appendChild(el);
+  });
+}
+
+function upgradeSkill(nodeId) {
+  const node = SKILL_NODES.find(n => n.id === nodeId);
+  if (!node) return;
+  const rank = window.unlockedSkills[nodeId] || 0;
+  if (rank >= node.maxRank) return;
+  const available = window.totalSkillPoints - window.spentSkillPoints;
+  if (available < node.cost) return;
+  // Check requirements (at least 1 rank)
+  const reqsMet = node.requires.every(r => (window.unlockedSkills[r] || 0) > 0);
+  if (!reqsMet && node.requires.length > 0) return;
+
+  window.unlockedSkills[nodeId] = rank + 1;
+  window.spentSkillPoints += node.cost;
+  renderSkillTree();
+  updateStHeader();
+  toast(`✦ ${node.name} upgraded to rank ${rank+1}!`, 'const-toast');
+  scheduleSave();
+}
+
+function setupSkillTreeDrag() {
+  const wrap = document.getElementById('stCanvasWrap');
+  const canvas = document.getElementById('stCanvas');
+
+  const applyOffset = () => {
+    canvas.style.transform = `translate(${stOffset.x}px,${stOffset.y}px)`;
+  };
+
+  // Mouse
+  wrap.onmousedown = e => {
+    if (e.target.closest('.sn')) return;
+    stDrag.active = true;
+    stDrag.startX = e.clientX - stOffset.x;
+    stDrag.startY = e.clientY - stOffset.y;
+    wrap.style.cursor = 'grabbing';
+  };
+  document.onmousemove = e => {
+    if (!stDrag.active) return;
+    stOffset.x = e.clientX - stDrag.startX;
+    stOffset.y = e.clientY - stDrag.startY;
+    applyOffset();
+  };
+  document.onmouseup = () => {
+    stDrag.active = false;
+    wrap.style.cursor = 'grab';
+  };
+
+  // Touch / iPad
+  wrap.ontouchstart = e => {
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    stDrag.active = true;
+    stDrag.startX = t.clientX - stOffset.x;
+    stDrag.startY = t.clientY - stOffset.y;
+  };
+  wrap.ontouchmove = e => {
+    if (!stDrag.active || e.touches.length !== 1) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    stOffset.x = t.clientX - stDrag.startX;
+    stOffset.y = t.clientY - stDrag.startY;
+    applyOffset();
+  };
+  wrap.ontouchend = () => { stDrag.active = false; };
+}
+
+// ═══════════════════════════════════════════════════════════
+// HISTORY TRAY
+// ═══════════════════════════════════════════════════════════
+function rebuildHistory() {
+  const tray = document.getElementById('historyTray');
+  tray.innerHTML = '';
+  window.rollHistory.forEach((item, i) => {
+    const chip = document.createElement('div');
+    chip.className = `hist-chip rarity-${item.rarity}`;
+    chip.textContent = item.name;
+    chip.style.animationDelay = `${i * 30}ms`;
+    chip.style.opacity = String(1 - i * 0.15);
+    tray.appendChild(chip);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// PARTICLES
+// ═══════════════════════════════════════════════════════════
+function spawnParticles(container, count, colors) {
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const sz = 3 + Math.random() * 9;
+    const a  = Math.random() * Math.PI * 2;
+    const d  = 55 + Math.random() * 140;
+    const dur = (0.5 + Math.random() * 0.8).toFixed(2);
+    p.style.cssText = `
+      width:${sz}px;height:${sz}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      left:calc(50% - ${sz/2}px);top:calc(50% - ${sz/2}px);
+      border-radius:${Math.random()>.5?'50%':'2px'};
+      --dx:${(Math.cos(a)*d).toFixed(1)}px;--dy:${(Math.sin(a)*d).toFixed(1)}px;
+      --dur:${dur}s;animation-delay:${(Math.random()*.12).toFixed(2)}s;
+    `;
+    container.appendChild(p);
+    setTimeout(() => p.remove(), 1500);
+  }
+}
+
+function triggerFlash(cls) {
+  const el = document.getElementById('flashOverlay');
+  el.className = `flash-overlay ${cls}`;
+  setTimeout(() => { el.className = 'flash-overlay'; }, 1400);
+}
+
+// ═══════════════════════════════════════════════════════════
+// STREAK UI
+// ═══════════════════════════════════════════════════════════
+function updateStreakUI(rarity) {
+  const row   = document.getElementById('streakRow');
+  const bonus = document.getElementById('streakBonus');
+  const pips  = document.querySelectorAll('.pip');
+  row.classList.add('visible');
+  pips.forEach((pip, i) => {
+    const wasLit = pip.className.includes('lit-');
+    const nowLit = i < streak;
+    pip.className = 'pip' + (nowLit ? ` lit-${rarity}` : '');
+    if (nowLit && !wasLit) pip.classList.add('popping');
+    setTimeout(() => pip.classList.remove('popping'), 350);
+  });
+  if (streak >= 3) {
+    bonus.textContent = streak >= 5 ? '🔥 MAX HEAT — boosted odds!' : `🔥 ×${streak} streak`;
+    bonus.style.opacity = '1';
+    bonus.style.transform = 'scale(1)';
+  } else {
+    bonus.style.opacity = '0';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// MILESTONES
+// ═══════════════════════════════════════════════════════════
+function checkMilestone(n) {
+  if (MILESTONES.includes(n)) {
+    toast(`🎲 ${n} rolls reached!`, 'milestone-toast');
+  }
+  (window.BUTTON_STYLES || []).forEach(s => {
+    if (s.unlockAt > 0 && n === s.unlockAt) {
+      setTimeout(() => toast(`🎨 Style unlocked: ${s.name}!`, 'milestone-toast'), 500);
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONSTELLATIONS
+// ═══════════════════════════════════════════════════════════
+let newlyFoundStars = new Set();
+
+function checkConstellations(newName) {
+  newlyFoundStars.add(newName);
+  CONSTELLATIONS.forEach(c => {
+    if (completedConstellations.has(c.id)) return;
+    const allFound = c.names.every(n => window.collected[n]);
+    if (allFound) {
+      completedConstellations.add(c.id);
+      setTimeout(() => toast(`✦ Constellation! ${c.name} — "${c.title}" unlocked`, 'const-toast'), 700);
+    }
+  });
+}
+
+function openConstellation()  { renderConstellation(); document.getElementById('constOverlay').classList.add('open'); }
+function closeConstellation() { document.getElementById('constOverlay').classList.remove('open'); }
+
+function renderConstellation() {
+  const body = document.getElementById('constBody');
+  body.innerHTML = '';
+  let complete = 0, titles = [];
+  CONSTELLATIONS.forEach(c => {
+    const found  = c.names.filter(n => window.collected[n]).length;
+    const total  = c.names.length;
+    const isDone = found === total;
+    if (isDone) { complete++; titles.push(`"${c.title}"`); }
+    const g = document.createElement('div');
+    g.className = `const-group${isDone ? ' complete' : ''}`;
+    g.innerHTML = `
+      <div class="const-group-name">${c.name}</div>
+      <div class="const-progress-line">${isDone ? '✦ ' + c.title : `${found} / ${total} discovered`}</div>
+      <div class="const-mini-bar"><div class="const-mini-fill" style="width:${(found/total*100).toFixed(0)}%"></div></div>
+      <div class="const-stars">
+        ${c.names.map(n => {
+          const f = !!window.collected[n];
+          const isNew = newlyFoundStars.has(n);
+          return `<div class="const-star${f?' found':''}${f&&isNew?' new-find':''}">${f?n:'???'}</div>`;
+        }).join('')}
+      </div>
+    `;
+    body.appendChild(g);
+  });
+  newlyFoundStars.clear();
+  document.getElementById('constProgress').textContent = `${complete} / ${CONSTELLATIONS.length} constellations complete`;
+  document.getElementById('constTitles').textContent = titles.length ? titles.join(' · ') : '';
+}
+
+// ═══════════════════════════════════════════════════════════
+// COUNTER + STYLE
+// ═══════════════════════════════════════════════════════════
+function updateRollCounter() {
+  const el = document.getElementById('rollCounter');
+  if (el) el.textContent = window.totalRolls > 0 ? `#${window.totalRolls}` : '';
+}
+
+// updateButtonStyle — defined in button-styles.js
+
+// ═══════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════
+function toast(msg, cls='') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast${cls ? ' '+cls : ''}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => {
+    t.classList.add('out');
+    setTimeout(() => t.remove(), 320);
+  }, 3600);
+}
+
+// ═══════════════════════════════════════════════════════════
+// FIREBASE SAVE
+// ═══════════════════════════════════════════════════════════
+function setStatus(type, msg) {
+  const el = document.getElementById('saveStatus');
+  el.textContent = msg;
+  el.className = `save-status ${type}`;
+}
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveToFirebase, 1800);
+}
+
+async function saveToFirebase() {
+  if (!window._dbReady) return;
+  setStatus('saving', 'Saving…');
+  try {
+    const ref = window._dbDoc(window._db, 'saves', 'player1');
+    await window._dbSetDoc(ref, {
+      collected:        window.collected,
+      totalRolls:       window.totalRolls,
+      activeStyle:      window.activeStyle,
+      rollHistory:      window.rollHistory,
+      rebirthCount:     window.rebirthCount,
+      totalSkillPoints: window.totalSkillPoints,
+      spentSkillPoints: window.spentSkillPoints,
+      unlockedSkills:   window.unlockedSkills,
+      updatedAt:        new Date().toISOString()
+    });
+    setStatus('saved', '● saved');
+    setTimeout(() => setStatus('',''), 2000);
+  } catch(e) {
+    setStatus('error', 'Save failed');
+    console.error(e);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// BOOK
+// ═══════════════════════════════════════════════════════════
+function openBook() {
+  coverFlipped = false;
+  document.getElementById('bookCover').classList.remove('opened');
+  document.getElementById('bookOverlay').classList.add('open');
+  currentPage = 0;
+  renderPage();
+}
+function closeBook() { document.getElementById('bookOverlay').classList.remove('open'); }
+function flipCover() {
+  if (!coverFlipped) { document.getElementById('bookCover').classList.add('opened'); coverFlipped = true; }
+}
+
+function switchTab(rarity, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentTab = rarity; currentPage = 0;
+  animatePage('right');
+}
+
+function getFilteredNames() {
+  const rarities = currentTab === 'all'
+    ? ['divine','mythic','cursed','legendary','rare','uncommon','common']
+    : [currentTab];
+  let all = [];
+  rarities.forEach(r => {
+    if (!NAMES[r]) return;
+    NAMES[r].forEach(n => all.push({ name:n, rarity:r, collected:!!window.collected[n] }));
+  });
+  return all;
+}
+
+function renderPage() {
+  const names   = getFilteredNames();
+  const slice   = names.slice(currentPage * NAMES_PER_PAGE, (currentPage+1) * NAMES_PER_PAGE);
+  const content = document.getElementById('pageContent');
+
+  if (!names.length) {
+    content.innerHTML = '<div style="text-align:center;padding:48px;color:#bbb;font-size:11px;letter-spacing:.15em;text-transform:uppercase">No names</div>';
+    return;
+  }
+
+  const groups = {};
+  slice.forEach(item => { if (!groups[item.rarity]) groups[item.rarity]=[]; groups[item.rarity].push(item); });
+
+  let html = '';
+  ['divine','mythic','cursed','legendary','rare','uncommon','common'].forEach(r => {
+    if (!groups[r]) return;
+    const cfg = RARITY_CONFIG[r];
+    html += `<div class="rarity-section-label" style="color:${cfg.color}">${cfg.label}</div><div class="names-grid">`;
+    groups[r].forEach(item => {
+      html += `<div class="name-entry ${item.collected ? `collected rarity-${r}` : 'not-collected'}">${item.name}</div>`;
+    });
+    html += '</div>';
+  });
+
+  content.innerHTML = html;
+  const cc = Object.keys(window.collected).length;
+  const tc = allNamesFlat().length;
+  document.getElementById('bookCount').textContent = cc === 0 ? 'No names collected yet' : `${cc} / ${tc} collected`;
+  const pages = Math.ceil(names.length / NAMES_PER_PAGE);
+  document.getElementById('prevBtn').disabled = currentPage === 0;
+  document.getElementById('nextBtn').disabled = currentPage >= pages - 1;
+  updateRebirthButton();
+}
+
+function animatePage(dir) {
+  const p = document.getElementById('pageContent');
+  p.classList.remove('visible');
+  p.classList.add(dir === 'right' ? 'exit-left' : 'enter-right');
+  setTimeout(() => {
+    renderPage();
+    p.classList.remove('exit-left','enter-right');
+    p.classList.add('enter-right');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      p.classList.remove('enter-right');
+      p.classList.add('visible');
+    }));
+  }, 260);
+}
+
+function prevPage() { if (currentPage > 0) { currentPage--; animatePage('left'); } }
+function nextPage() {
+  const t = getFilteredNames().length;
+  if (currentPage < Math.ceil(t / NAMES_PER_PAGE) - 1) { currentPage++; animatePage('right'); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SHOP — fully owned by button-styles.js
+// ═══════════════════════════════════════════════════════════
+
+// init
+setTimeout(() => {
+  updateRebirthButton();
+}, 200);
+</script>
+</body>
+</html>
