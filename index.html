@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Name Roller</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #f2f2f2;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 60px 24px 40px;
+    }
+
+    h1 {
+      font-family: 'DM Mono', monospace;
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #999;
+      margin-bottom: 60px;
+    }
+
+    .result-box {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 16px;
+      width: 100%;
+      max-width: 480px;
+      padding: 48px 32px;
+      text-align: center;
+      margin-bottom: 32px;
+      min-height: 160px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .result-label {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #bbb;
+      margin-bottom: 16px;
+      font-family: 'DM Mono', monospace;
+    }
+
+    .result-name {
+      font-size: 42px;
+      font-weight: 300;
+      color: #1a1a1a;
+      transition: opacity 0.15s ease;
+    }
+
+    .result-name.flash { opacity: 0; }
+
+    .result-name.empty {
+      font-size: 20px;
+      color: #ccc;
+    }
+
+    button {
+      background: #1a1a1a;
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 18px 48px;
+      font-size: 16px;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 500;
+      cursor: pointer;
+      width: 100%;
+      max-width: 480px;
+      margin-bottom: 40px;
+      transition: background 0.15s, transform 0.1s;
+    }
+
+    button:active { background: #333; transform: scale(0.98); }
+
+    .list-section { width: 100%; max-width: 480px; }
+
+    .list-title {
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #bbb;
+      font-family: 'DM Mono', monospace;
+      margin-bottom: 12px;
+    }
+
+    .name-list {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .name-item {
+      padding: 14px 20px;
+      font-size: 16px;
+      font-weight: 300;
+      color: #444;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .name-item:last-child { border-bottom: none; }
+
+    .name-item.active {
+      background: #f7f7f7;
+      color: #1a1a1a;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Name Roller</h1>
+
+  <div class="result-box">
+    <div class="result-label">Rolled name</div>
+    <div class="result-name empty" id="result">—</div>
+  </div>
+
+  <button onclick="rollName()">Roll</button>
+
+  <div class="list-section">
+    <div class="list-title">All names</div>
+    <div class="name-list" id="nameList"></div>
+  </div>
+
+  <script>
+    const names = [
+      "Alice", "Benjamin", "Charlotte", "David", "Eleanor",
+      "Finn", "Grace", "Henry", "Isla", "James",
+      "Katherine", "Liam", "Mia", "Noah", "Olivia",
+      "Patrick", "Quinn", "Rachel", "Samuel", "Tara",
+      "Uma", "Victor", "Wendy", "Xander", "Yara", "Zoe"
+    ];
+
+    let lastIndex = -1;
+
+    function buildList() {
+      const list = document.getElementById('nameList');
+      names.forEach((name, i) => {
+        const div = document.createElement('div');
+        div.className = 'name-item';
+        div.id = 'name-' + i;
+        div.textContent = name;
+        list.appendChild(div);
+      });
+    }
+
+    function rollName() {
+      const el = document.getElementById('result');
+
+      if (lastIndex >= 0) {
+        document.getElementById('name-' + lastIndex).classList.remove('active');
+      }
+
+      el.classList.add('flash');
+
+      setTimeout(() => {
+        let idx;
+        do { idx = Math.floor(Math.random() * names.length); } while (idx === lastIndex);
+        lastIndex = idx;
+
+        el.textContent = names[idx];
+        el.classList.remove('empty', 'flash');
+
+        document.getElementById('name-' + idx).classList.add('active');
+        document.getElementById('name-' + idx).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 150);
+    }
+
+    buildList();
+  </script>
+</body>
+</html>
