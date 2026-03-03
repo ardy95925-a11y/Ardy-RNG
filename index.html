@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Name Roller</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header>
+    <p class="eyebrow">Random Name Generator</p>
+    <h1>Name Roller</h1>
+  </header>
+
+  <!-- Result card -->
+  <div class="card">
+    <span class="rarity-badge" id="rarityBadge" style="display:none"></span>
+    <div class="result-name idle" id="resultName">press roll</div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="btn-row">
+    <button class="btn btn-primary" onclick="doRoll()">Roll</button>
+    <button class="btn btn-secondary" onclick="openBook()">Name Book</button>
+  </div>
+
+  <!-- ── BOOK OVERLAY ── -->
+  <div class="book-overlay" id="bookOverlay" onclick="handleOverlayClick(event)">
+    <div class="book" id="book">
+
+      <!-- Cover -->
+      <div class="book-cover" id="bookCover" onclick="flipCover()">
+        <div class="book-cover-line"></div>
+        <div class="book-cover-title">Name Book</div>
+        <div class="book-cover-sub">Collected Names</div>
+        <div class="book-cover-line"></div>
+        <div class="book-cover-tap">Tap to open</div>
+      </div>
+
+      <!-- Pages -->
+      <div class="book-pages">
+        <div class="book-header">
+          <span class="book-title">Name Book</span>
+          <button class="book-close" onclick="closeBook()">Close</button>
+        </div>
+
+        <div class="book-tabs" id="bookTabs">
+          <button class="tab-btn active" data-rarity="all" onclick="switchTab('all', this)">All</button>
+          <button class="tab-btn" data-rarity="common"    onclick="switchTab('common', this)">Common</button>
+          <button class="tab-btn" data-rarity="uncommon"  onclick="switchTab('uncommon', this)">Uncommon</button>
+          <button class="tab-btn" data-rarity="rare"      onclick="switchTab('rare', this)">Rare</button>
+          <button class="tab-btn" data-rarity="legendary" onclick="switchTab('legendary', this)">Legendary</button>
+        </div>
+
+        <div class="page-wrap">
+          <div class="page visible" id="pageContent"></div>
+        </div>
+
+        <div class="book-footer">
+          <span class="book-count" id="bookCount"></span>
+          <div class="page-nav">
+            <button id="prevBtn" onclick="prevPage()" disabled>&#8592;</button>
+            <button id="nextBtn" onclick="nextPage()">&#8594;</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="names.js"></script>
+  <script>
+    // ── State ──────────────────────────────────────────
+    const collected = {}; // { name: rarity }
+    let currentTab = 'all';
+    let coverFlipped = false;
+    let currentPage = 0;
+    const NAMES_PER_PAGE = 30;
+
+    // ── Roll ───────────────────────────────────────────
+    function doRoll() {
+      const el = document.getElementById('resultName');
+      const badge = document.getElementById('rarityBadge');
+      el.classList.add('flash');
+
+      setTimeout(() => {
+        const { name, rarity } = rollName();
+        collected[name] = rarity;
+
+        const cfg = RARITY_CONFIG[rarity];
+        el.textContent = name;
+        el.classList.remove('flash', 'idle');
+
+        badge.textContent = cfg.label;
+        badge.style.display = 'inline-block';
+        badge.style.background = cfg.bg;
+        badge.style.color = cfg.textColor;
+      }, 200);
+    }
+
+    // ── Book open/close ────────────────────────────────
+    function openBook() {
+      coverFlipped = false;
+      document.getElementById('bookCover').classList.remove('opened');
+      document.getElementById('bookOverlay').classList.add('open');
+      currentPage = 0;
+      renderPage();
+    }
+
+    function closeBook() {
+      document.getElementById('bookOverlay').classList.remove('open');
+    }
+
+    function handleOverlayClick(e) {
+      if (e.target === document.getElementById('bookOverlay')) closeBook();
+    }
+
+    function flipCover() {
+      if (!coverFlipped) {
+        document.getElementById('bookCover').classList.add('opened');
+        coverFlipped = true;
+      }
+    }
+
+    // ── Tabs ───────────────────────────────────────────
+    function switchTab(rarity, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentTab = rarity;
+      currentPage = 0;
+      animatePage('right');
+    }
+
+    // ── Pagination ─────────────────────────────────────
+    function getFilteredNames() {
+      const rarities = currentTab === 'all'
+        ? ['legendary','rare','uncommon','common']
+        : [currentTab];
+
+      let all = [];
+      rarities.forEach(r => {
+        NAMES[r].forEach(n => all.push({ name: n, rarity: r, collected: !!collected[n] }));
+      });
+      return all;
+    }
+
+    function renderPage() {
+      const names = getFilteredNames();
+      const total = names.length;
+      const start = currentPage * NAMES_PER_PAGE;
+      const slice = names.slice(start, start + NAMES_PER_PAGE);
+
+      const content = document.getElementById('pageContent');
+
+      if (names.length === 0) {
+        content.innerHTML = `<div class="empty-state">No names in this category</div>`;
+        updateFooter(0, 0);
+        return;
+      }
+
+      // Group slice by rarity for display
+      const groups = {};
+      slice.forEach(item => {
+        if (!groups[item.rarity]) groups[item.rarity] = [];
+        groups[item.rarity].push(item);
+      });
+
+      const rarityOrder = ['legendary','rare','uncommon','common'];
+      let html = '';
+
+      rarityOrder.forEach(r => {
+        if (!groups[r]) return;
+        const cfg = RARITY_CONFIG[r];
+        html += `<div class="rarity-section-label" style="color:${cfg.color}">${cfg.label}</div>`;
+        html += `<div class="names-grid" style="margin-bottom:20px">`;
+        groups[r].forEach(item => {
+          const cls = item.collected ? 'collected' : 'not-collected';
+          html += `<div class="name-entry ${cls}">${item.name}</div>`;
+        });
+        html += `</div>`;
+      });
+
+      content.innerHTML = html;
+
+      const collectedCount = Object.keys(collected).length;
+      const totalNames = Object.values(NAMES).flat().length;
+      updateFooter(collectedCount, totalNames);
+      updateNav(total);
+    }
+
+    function updateFooter(c, t) {
+      document.getElementById('bookCount').textContent =
+        c === 0 ? 'No names collected yet' : `${c} / ${t} collected`;
+    }
+
+    function updateNav(total) {
+      const pages = Math.ceil(total / NAMES_PER_PAGE);
+      document.getElementById('prevBtn').disabled = currentPage === 0;
+      document.getElementById('nextBtn').disabled = currentPage >= pages - 1;
+    }
+
+    function animatePage(direction) {
+      const page = document.getElementById('pageContent');
+      page.classList.remove('visible');
+      page.classList.add(direction === 'right' ? 'exit-left' : 'enter-right');
+
+      setTimeout(() => {
+        renderPage();
+        page.classList.remove('exit-left','enter-right');
+        page.classList.add('enter-right');
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            page.classList.remove('enter-right');
+            page.classList.add('visible');
+          });
+        });
+      }, 250);
+    }
+
+    function prevPage() {
+      if (currentPage > 0) { currentPage--; animatePage('left'); }
+    }
+
+    function nextPage() {
+      const total = getFilteredNames().length;
+      const pages = Math.ceil(total / NAMES_PER_PAGE);
+      if (currentPage < pages - 1) { currentPage++; animatePage('right'); }
+    }
+  </script>
+</body>
+</html>
+```
+
+---
+
+**Folder structure for GitHub:**
+```
+your-repo/
+├── index.html
+├── style.css
+└── names.js
