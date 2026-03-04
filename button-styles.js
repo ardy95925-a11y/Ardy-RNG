@@ -1038,7 +1038,7 @@ window.STYLE_RARITY = {
   100% {text-shadow:-2px 0 rgba(255,0,200,.8),2px 0 rgba(0,220,255,.7);transform:scaleX(1)}
 }
 
-
+`;
   document.head.appendChild(style);
 })();
 
