@@ -922,123 +922,84 @@ window.STYLE_RARITY = {
 .shop-cat[data-cat="expert"]:hover{color:rgba(220,180,255,.8);border-color:rgba(200,120,255,.4);background:rgba(180,80,255,.06)}
 .shop-cat[data-cat="expert"].active{color:#e0b4ff;border-color:rgba(200,130,255,.4);background:rgba(180,80,255,.12);box-shadow:0 0 14px rgba(180,80,255,.12),inset 0 1px 0 rgba(220,160,255,.1)}
 
-/* ══════════════════════════════════════════════════════════
-   WITCHFIRE — alchemical green flame
-   ══════════════════════════════════════════════════════════ */
-@keyframes witchfire-burn{
-  0%,100%{box-shadow:0 0 10px rgba(0,200,80,.25),0 0 24px rgba(0,140,60,.1),inset 0 0 18px rgba(0,160,60,.05);border-color:#00aa44}
-  33%{box-shadow:0 0 22px rgba(40,220,100,.5),0 0 44px rgba(0,160,70,.22),inset 0 0 28px rgba(20,200,70,.1);border-color:#20dd60}
-  66%{box-shadow:0 0 16px rgba(100,255,120,.4),0 0 36px rgba(20,180,80,.18),inset 0 0 22px rgba(40,220,90,.08);border-color:#60ff80}
+/* ══════ WITCHFIRE ══════ */
+@keyframes wf-burn{
+  0%,100%{box-shadow:0 0 10px rgba(0,200,80,.25),0 0 24px rgba(0,140,60,.1);border-color:#00aa44}
+  50%{box-shadow:0 0 22px rgba(40,220,100,.5),0 0 44px rgba(0,160,70,.22);border-color:#20dd60}
 }
-@keyframes witchfire-text{
+@keyframes wf-text{
   0%,100%{color:#40ff80;text-shadow:0 0 8px rgba(80,255,120,.8),0 0 20px rgba(0,200,80,.5)}
-  50%    {color:#80ffaa;text-shadow:0 0 16px rgba(140,255,160,.9),0 0 36px rgba(60,220,100,.7),0 0 60px rgba(0,180,80,.3)}
+  50%{color:#80ffaa;text-shadow:0 0 16px rgba(140,255,160,.9),0 0 36px rgba(60,220,100,.7)}
 }
-@keyframes witchfire-scanlines{
-  0%  {background-position:0 0}
-  100%{background-position:0 8px}
-}
+@keyframes wf-scan{0%{background-position:0 0}100%{background-position:0 8px}}
 .btn-primary.style-witchfire{
   background:linear-gradient(180deg,#001408,#002210,#003818);
   border:1px solid #00aa44;color:#40ff80;
   font-family:'Cinzel',serif;font-size:10px;letter-spacing:.2em;
   text-shadow:0 0 8px rgba(80,255,120,.8),0 0 20px rgba(0,200,80,.5);
-  animation:witchfire-burn 2.5s ease-in-out infinite,witchfire-text 2s ease-in-out infinite;
+  animation:wf-burn 2.5s ease-in-out infinite,wf-text 2s ease-in-out infinite;
   position:relative;overflow:hidden;
 }
 .btn-primary.style-witchfire::before{
-  content:'';position:absolute;inset:0;pointer-events:none;
-  background:repeating-linear-gradient(0deg,
-    transparent,transparent 3px,
-    rgba(0,255,80,.025) 3px,rgba(0,255,80,.025) 4px
-  );
-  animation:witchfire-scanlines .3s linear infinite;
-  z-index:0;
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,255,80,.025) 3px,rgba(0,255,80,.025) 4px);
+  animation:wf-scan .3s linear infinite;
 }
-.btn-primary.style-witchfire:hover{
-  background:linear-gradient(180deg,#002010,#003818,#005028);
-  border-color:#40ff80;
-}
-/* Witchfire roll text animation */
+.btn-primary.style-witchfire:hover{background:linear-gradient(180deg,#002010,#003818,#005028);border-color:#40ff80}
 #resultName[data-expert-style="witchfire"].spin-fast,
 #resultName[data-expert-style="witchfire"].spin-mid,
 #resultName[data-expert-style="witchfire"].spin-slow{
-  font-family:'Cinzel',serif !important;letter-spacing:.12em;
-  color:#40ff80 !important;
-  text-shadow:0 0 12px rgba(40,255,100,.8),0 0 30px rgba(0,200,80,.5) !important;
-  -webkit-text-fill-color:unset !important;background:none !important;
-  animation:wf-roll .12s ease-in-out infinite !important;
+  font-family:'Cinzel',serif!important;color:#40ff80!important;letter-spacing:.12em;
+  text-shadow:0 0 12px rgba(40,255,100,.8)!important;
+  -webkit-text-fill-color:unset!important;background:none!important;
+  animation:wf-roll .12s ease-in-out infinite!important;
 }
-@keyframes wf-roll{
-  0%,100%{filter:brightness(1) hue-rotate(0deg);transform:scaleY(1)}
-  50%    {filter:brightness(1.4) hue-rotate(20deg);transform:scaleY(.92)}
-}
+@keyframes wf-roll{0%,100%{filter:brightness(1);transform:scaleY(1)}50%{filter:brightness(1.4) hue-rotate(20deg);transform:scaleY(.92)}}
 
-/* ══════════════════════════════════════════════════════════
-   RIFT — holographic spacetime tear, chromatic aberration
-   ══════════════════════════════════════════════════════════ */
+/* ══════ RIFT ══════ */
 @keyframes rift-warp{
-  0%,100%{clip-path:polygon(0 6%,100% 0%,100% 94%,0% 100%);background-position:0% 50%}
-  25%{clip-path:polygon(0 0%,100% 4%,100% 100%,0% 96%)}
-  50%{clip-path:polygon(0 4%,100% 0%,100% 96%,0% 100%);background-position:100% 50%}
-  75%{clip-path:polygon(0 0%,100% 5%,100% 95%,0% 100%)}
+  0%,100%{clip-path:polygon(0 5%,100% 0,100% 95%,0 100%)}
+  50%{clip-path:polygon(0 0,100% 4%,100% 100%,0 96%)}
 }
-@keyframes rift-aberration{
+@keyframes rift-ab{
   0%,100%{text-shadow:-1px 0 rgba(255,0,120,.75),1px 0 rgba(0,220,255,.75),0 0 14px rgba(200,100,255,.5)}
-  25%{text-shadow:-2px 0 rgba(255,0,80,.85),2px 0 rgba(0,255,200,.7),0 0 22px rgba(180,80,255,.65)}
   50%{text-shadow:2px 0 rgba(255,0,160,.85),-1px 0 rgba(0,200,255,.65),0 0 18px rgba(220,120,255,.7)}
-  75%{text-shadow:-1px 0 rgba(180,0,255,.75),1px 0 rgba(0,255,220,.8),0 0 24px rgba(160,100,255,.55)}
 }
-@keyframes rift-scan{
-  0%{transform:translateY(-100%);opacity:.18}
-  85%{opacity:.18}
-  100%{transform:translateY(500%);opacity:0}
-}
+@keyframes rift-scan{0%{transform:translateY(-100%);opacity:.18}100%{transform:translateY(500%);opacity:0}}
 @keyframes rift-glitch{
-  0%,91%,100%{transform:skewX(0deg);filter:none;clip-path:none}
-  92%{transform:skewX(-5deg);filter:brightness(1.6) saturate(2.5);clip-path:polygon(0 20%,100% 20%,100% 40%,0 40%)}
-  93%{transform:skewX(3deg);filter:brightness(.7);clip-path:none}
-  94%{transform:skewX(0deg);filter:brightness(1.4) hue-rotate(50deg);clip-path:polygon(0 55%,100% 55%,100% 75%,0 75%)}
-  95%{transform:skewX(-1deg);filter:none;clip-path:none}
+  0%,91%,100%{transform:skewX(0deg);filter:none}
+  92%{transform:skewX(-5deg);filter:brightness(1.6) saturate(2.5)}
+  94%{transform:skewX(0deg);filter:brightness(1.4) hue-rotate(50deg)}
 }
 .btn-primary.style-rift{
-  background:linear-gradient(135deg,#030010,#080020,#00080e,#0e0008);
-  background-size:300% 300%;
-  border:1px solid rgba(180,80,255,.55);
-  color:#d8b0ff;
+  background:linear-gradient(135deg,#030010,#080020,#00080e);
+  background-size:200% 200%;
+  border:1px solid rgba(180,80,255,.55);color:#d8b0ff;
   font-family:'Cinzel',serif;font-size:10px;letter-spacing:.22em;
   text-shadow:-1px 0 rgba(255,0,120,.7),1px 0 rgba(0,220,255,.7),0 0 14px rgba(200,100,255,.5);
-  box-shadow:0 0 18px rgba(160,60,255,.2),inset 0 0 20px rgba(100,40,200,.06);
-  animation:rift-warp 5s ease-in-out infinite,rift-aberration 2s ease-in-out infinite,rift-glitch 9s steps(1) infinite;
+  box-shadow:0 0 18px rgba(160,60,255,.2);
+  animation:rift-warp 5s ease-in-out infinite,rift-ab 2s ease-in-out infinite,rift-glitch 9s steps(1) infinite;
   position:relative;overflow:hidden;
 }
 .btn-primary.style-rift::before{
-  content:'';position:absolute;
-  left:0;right:0;height:1px;top:0;
-  background:linear-gradient(90deg,transparent,rgba(200,100,255,.8),rgba(0,220,255,.6),rgba(200,100,255,.8),transparent);
+  content:'';position:absolute;left:0;right:0;height:1px;top:0;pointer-events:none;z-index:1;
+  background:linear-gradient(90deg,transparent,rgba(200,100,255,.8),rgba(0,220,255,.6),transparent);
   animation:rift-scan 2.2s linear infinite;
-  pointer-events:none;z-index:1;
 }
-.btn-primary.style-rift:hover{
-  border-color:rgba(220,120,255,.85);
-  box-shadow:0 0 32px rgba(200,80,255,.45),0 0 60px rgba(0,200,255,.18),inset 0 0 28px rgba(140,60,220,.12);
-}
-/* Rift roll text */
+.btn-primary.style-rift:hover{border-color:rgba(220,120,255,.85);box-shadow:0 0 32px rgba(200,80,255,.45)}
 #resultName[data-expert-style="rift"].spin-fast,
 #resultName[data-expert-style="rift"].spin-mid,
 #resultName[data-expert-style="rift"].spin-slow{
-  font-family:'Cinzel',serif !important;letter-spacing:.15em;
-  color:#d0a0ff !important;-webkit-text-fill-color:unset !important;background:none !important;
-  animation:rift-roll .1s linear infinite !important;
+  font-family:'Cinzel',serif!important;color:#d0a0ff!important;letter-spacing:.15em;
+  -webkit-text-fill-color:unset!important;background:none!important;
+  animation:rift-roll .1s linear infinite!important;
 }
 @keyframes rift-roll{
-  0%   {text-shadow:-2px 0 rgba(255,0,200,.8),2px 0 rgba(0,220,255,.7);transform:scaleX(1)}
-  33%  {text-shadow:2px 0 rgba(255,0,80,.8),-2px 0 rgba(0,255,200,.7);transform:scaleX(.97)}
-  66%  {text-shadow:-1px 0 rgba(200,0,255,.9),1px 0 rgba(0,255,255,.8);transform:scaleX(1.02)}
-  100% {text-shadow:-2px 0 rgba(255,0,200,.8),2px 0 rgba(0,220,255,.7);transform:scaleX(1)}
+  0%,100%{text-shadow:-2px 0 rgba(255,0,200,.8),2px 0 rgba(0,220,255,.7)}
+  50%{text-shadow:2px 0 rgba(255,0,80,.8),-2px 0 rgba(0,255,200,.7)}
 }
 
-
+`;
   document.head.appendChild(style);
 })();
 
