@@ -1,0 +1,3202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Name Roller</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Mono:wght@300;400&family=Cinzel:wght@400;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Uncial+Antiqua&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#f0eeeb;--surface:#fff;--border:#dddbd7;--text:#1c1a17;--muted:#999690;
+  --accent:#1c1a17;--book-bg:#faf8f4;--book-border:#e8e4de;
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --ease-out:cubic-bezier(.22,1,.36,1);
+}
+
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:'DM Mono',monospace;-webkit-font-smoothing:antialiased}
+body{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:40px 24px 28px}
+
+/* ── HEADER ── */
+header{text-align:center;margin-bottom:40px;animation:fade-up .6s var(--ease-out) both}
+.eyebrow{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+h1{font-family:'Cormorant Garamond',serif;font-weight:300;font-size:48px;letter-spacing:.04em;line-height:1}
+
+@keyframes fade-up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fade-in{from{opacity:0}to{opacity:1}}
+
+/* ── STREAK ── */
+.streak-row{width:100%;max-width:440px;margin-bottom:8px;display:flex;align-items:center;gap:10px;height:20px;opacity:0;transition:opacity .4s ease}
+.streak-row.visible{opacity:1}
+.streak-label{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.streak-pips{display:flex;gap:5px;align-items:center}
+.pip{width:8px;height:8px;border-radius:50%;border:1px solid var(--border);background:var(--surface);transition:background .25s,border-color .25s,box-shadow .25s,transform .2s}
+.pip.lit-uncommon{background:#4a7a4a;border-color:#4a7a4a;box-shadow:0 0 6px rgba(74,122,74,.65)}
+.pip.lit-rare    {background:#3a5a8a;border-color:#3a5a8a;box-shadow:0 0 8px rgba(58,90,138,.7)}
+.pip.lit-legendary{background:#c8960a;border-color:#c8960a;box-shadow:0 0 10px rgba(200,150,10,.85)}
+.pip.lit-mythic  {background:linear-gradient(135deg,#ff40ff,#8040ff);border-color:#c040ff;box-shadow:0 0 12px rgba(192,64,255,.9)}
+.pip.lit-cursed  {background:#8b0000;border-color:#8b0000;box-shadow:0 0 8px rgba(180,0,0,.8)}
+.pip.lit-divine  {background:linear-gradient(135deg,#fff7a0,#ffe040,#ffc800);border-color:#ffd700;box-shadow:0 0 14px rgba(255,215,0,1)}
+.pip.lit-spectral{background:linear-gradient(135deg,#00ffff,#0080ff,#8000ff,#ff0080);border-color:#00e5ff;box-shadow:0 0 16px rgba(0,229,255,1),0 0 30px rgba(128,0,255,.6)}
+.pip.popping     {animation:pip-pop .3s var(--ease-spring) forwards}
+@keyframes pip-pop{0%{transform:scale(1)}50%{transform:scale(1.6)}100%{transform:scale(1)}}
+.streak-bonus{font-size:9px;letter-spacing:.1em;color:#c8960a;transition:opacity .3s,transform .3s;white-space:nowrap}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:5px;width:100%;max-width:440px;padding:48px 40px;text-align:center;margin-bottom:12px;min-height:210px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;box-shadow:0 2px 20px rgba(0,0,0,.05);position:relative;overflow:hidden;transition:box-shadow .6s ease,border-color .5s ease;animation:fade-up .6s var(--ease-out) .08s both}
+.card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,255,255,.55) 0%,transparent 55%);pointer-events:none}
+.card.idle-pulse{animation:card-idle 6s ease-in-out infinite}
+@keyframes card-idle{0%,100%{box-shadow:0 2px 20px rgba(0,0,0,.05)}50%{box-shadow:0 4px 28px rgba(0,0,0,.08)}}
+
+.card.rarity-uncommon{box-shadow:0 0 30px rgba(74,122,74,.14),0 2px 16px rgba(0,0,0,.04);border-color:#b8d4b8}
+.card.rarity-rare    {box-shadow:0 0 44px rgba(58,90,138,.2),0 2px 16px rgba(0,0,0,.04);border-color:#aac0e0}
+.card.rarity-legendary{border-color:transparent;box-shadow:0 0 60px rgba(200,140,20,.38),0 0 120px rgba(180,100,200,.18);animation:leg-card 3s ease-in-out infinite}
+.card.rarity-mythic  {border-color:transparent;animation:mythic-card 2.5s ease-in-out infinite}
+.card.rarity-cursed  {border-color:#4a0a0a;box-shadow:0 0 44px rgba(180,0,0,.28),0 0 80px rgba(80,0,0,.14);animation:cursed-card 4s ease-in-out infinite}
+.card.rarity-divine  {border-color:transparent;animation:divine-card 2s ease-in-out infinite}
+.card.rarity-spectral{border-color:transparent;animation:spectral-card 1.8s ease-in-out infinite}
+
+@keyframes leg-card   {0%,100%{box-shadow:0 0 60px rgba(200,140,20,.38),0 0 120px rgba(180,100,200,.18)}50%{box-shadow:0 0 90px rgba(200,140,20,.6),0 0 180px rgba(180,100,200,.3)}}
+@keyframes mythic-card{0%,100%{box-shadow:0 0 60px rgba(180,0,255,.42),0 0 120px rgba(255,0,180,.22)}50%{box-shadow:0 0 100px rgba(180,0,255,.72),0 0 200px rgba(255,0,180,.42)}}
+@keyframes cursed-card{0%,100%{box-shadow:0 0 44px rgba(180,0,0,.28),0 0 80px rgba(80,0,0,.14)}50%{box-shadow:0 0 64px rgba(200,0,0,.44),0 0 120px rgba(120,0,0,.28)}}
+@keyframes divine-card{0%,100%{box-shadow:0 0 80px rgba(255,215,0,.6),0 0 160px rgba(255,255,200,.3),0 0 240px rgba(255,200,0,.15)}50%{box-shadow:0 0 120px rgba(255,215,0,.9),0 0 240px rgba(255,255,180,.5),0 0 360px rgba(255,220,0,.25)}}
+@keyframes spectral-card{0%,100%{box-shadow:0 0 80px rgba(0,229,255,.5),0 0 160px rgba(128,0,255,.3),0 0 240px rgba(0,229,255,.15)}25%{box-shadow:0 0 100px rgba(255,0,128,.5),0 0 180px rgba(0,229,255,.3),0 0 280px rgba(128,0,255,.2)}50%{box-shadow:0 0 120px rgba(128,0,255,.6),0 0 220px rgba(0,229,255,.4),0 0 340px rgba(255,0,128,.2)}75%{box-shadow:0 0 100px rgba(0,229,255,.5),0 0 180px rgba(255,0,128,.3),0 0 260px rgba(128,0,255,.2)}}
+
+.card.rarity-legendary::after{content:'';position:absolute;inset:-2px;border-radius:7px;background:linear-gradient(135deg,#f0c040,#e080ff,#60c0ff,#f0c040);background-size:300% 300%;animation:leg-border 4s linear infinite;z-index:-1}
+.card.rarity-mythic::after   {content:'';position:absolute;inset:-2px;border-radius:7px;background:linear-gradient(135deg,#ff00ff,#8800ff,#ff00aa,#00aaff,#ff00ff);background-size:400% 400%;animation:mythic-border 2.5s linear infinite;z-index:-1}
+.card.rarity-cursed::after   {content:'';position:absolute;inset:-1px;border-radius:6px;background:linear-gradient(135deg,#8b0000,#2a0000,#600000,#8b0000);background-size:300% 300%;animation:cursed-border 6s linear infinite;z-index:-1}
+.card.rarity-divine::after   {content:'';position:absolute;inset:-3px;border-radius:8px;background:conic-gradient(#ffd700,#fff7a0,#ffec00,#ffc800,#ffe680,#fff0a0,#ffd700);animation:divine-spin 2s linear infinite;z-index:-1}
+.card.rarity-spectral::after {content:'';position:absolute;inset:-3px;border-radius:8px;background:conic-gradient(#00ffff,#0066ff,#8800ff,#ff0088,#ff4400,#00ffff,#00ccff,#0044ff,#aa00ff,#ff0066,#00ffff);animation:spectral-spin 1.4s linear infinite;z-index:-1}
+
+@keyframes leg-border   {0%{background-position:0% 50%}100%{background-position:300% 50%}}
+@keyframes mythic-border{0%{background-position:0% 50%}100%{background-position:400% 50%}}
+@keyframes cursed-border{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes divine-spin  {from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes spectral-spin{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+
+.roll-counter{position:absolute;top:12px;right:14px;font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase}
+.new-badge{position:absolute;top:11px;left:13px;font-size:8px;letter-spacing:.15em;text-transform:uppercase;padding:3px 9px;border-radius:2px;background:#1c1a17;color:#fff;opacity:0;transition:opacity .35s;pointer-events:none}
+.new-badge.show{opacity:1}
+
+/* ── RARITY BADGE ── */
+.rarity-badge{font-size:9px;letter-spacing:.2em;text-transform:uppercase;padding:4px 14px;border-radius:2px;opacity:0;transform:translateY(-6px) scale(.95);transition:opacity .4s ease,transform .4s var(--ease-spring)}
+.rarity-badge.visible{opacity:1;transform:translateY(0) scale(1)}
+
+/* ── RESULT NAME ── */
+.result-name{font-family:'Cormorant Garamond',serif;font-size:52px;font-weight:300;letter-spacing:.02em;color:var(--text);line-height:1.1;position:relative;max-width:100%;word-break:break-word}
+.result-name.idle{font-size:18px;font-family:'DM Mono',monospace;font-weight:300;color:var(--muted);letter-spacing:.1em}
+
+.result-name.spin-fast{animation:slot-fast .06s linear infinite}
+.result-name.spin-mid {animation:slot-mid  .1s  linear infinite}
+.result-name.spin-slow{animation:slot-slow .18s linear infinite}
+@keyframes slot-fast{0%{transform:translateY(0) scaleY(1);opacity:.85}25%{transform:translateY(-11px) scaleY(.75);opacity:.35}50%{transform:translateY(0) scaleY(1);opacity:.85}75%{transform:translateY(11px) scaleY(.75);opacity:.35}100%{transform:translateY(0) scaleY(1);opacity:.85}}
+@keyframes slot-mid {0%{transform:translateY(0) scaleY(1);opacity:.9}25%{transform:translateY(-7px) scaleY(.85);opacity:.5}50%{transform:translateY(0) scaleY(1);opacity:.9}75%{transform:translateY(7px) scaleY(.85);opacity:.5}100%{transform:translateY(0) scaleY(1);opacity:.9}}
+@keyframes slot-slow{0%{transform:translateY(0) scaleY(1);opacity:.95}25%{transform:translateY(-4px) scaleY(.92);opacity:.65}50%{transform:translateY(0) scaleY(1);opacity:.95}75%{transform:translateY(4px) scaleY(.92);opacity:.65}100%{transform:translateY(0) scaleY(1);opacity:.95}}
+
+.result-name.landing{animation:name-pop .58s var(--ease-spring) forwards}
+@keyframes name-pop{0%{transform:scale(.6) translateY(28px);opacity:0}55%{transform:scale(1.07) translateY(-4px);opacity:1}100%{transform:scale(1) translateY(0);opacity:1}}
+
+.result-name.rarity-uncommon{font-family:'Playfair Display',serif;font-style:italic;color:#3a7a3a;animation:name-pop .58s var(--ease-spring) forwards,unc-shimmer 3s ease-in-out infinite .6s}
+@keyframes unc-shimmer{0%,100%{text-shadow:none}50%{text-shadow:0 0 26px rgba(60,130,60,.45),0 2px 8px rgba(60,130,60,.2)}}
+
+.result-name.rarity-rare{font-family:'Cinzel',serif;font-weight:600;font-size:42px;color:#1e3d7a;letter-spacing:.08em;animation:name-pop .58s var(--ease-spring) forwards,rare-pulse 2.5s ease-in-out infinite .6s}
+@keyframes rare-pulse{0%,100%{text-shadow:0 0 8px rgba(30,61,122,.12)}50%{text-shadow:0 0 22px rgba(30,61,122,.65),0 0 50px rgba(60,100,200,.22)}}
+
+.result-name.rarity-legendary{font-family:'Cinzel',serif;font-weight:700;font-size:44px;letter-spacing:.1em;background:linear-gradient(90deg,#f0c040,#ff8c00,#ff4080,#c040f0,#4080ff,#00c8f0,#40f090,#f0c040);background-size:300% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:name-pop .58s var(--ease-spring) forwards,leg-rainbow 3.5s linear infinite .6s}
+@keyframes leg-rainbow{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+
+.result-name.rarity-mythic{font-family:'Cinzel',serif;font-weight:700;font-size:44px;letter-spacing:.12em;background:linear-gradient(90deg,#ff00ff,#cc00ff,#8800ff,#ff00cc,#ff44ff,#cc00ff,#ff00ff);background-size:300% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:name-pop .58s var(--ease-spring) forwards,mythic-rainbow 2s linear infinite .6s,mythic-warp .9s ease-in-out infinite .6s}
+@keyframes mythic-rainbow{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+@keyframes mythic-warp{0%,100%{letter-spacing:.12em}50%{letter-spacing:.2em}}
+
+.result-name.rarity-cursed{font-family:'Uncial Antiqua',cursive;font-size:44px;color:#cc0000;letter-spacing:.06em;animation:name-pop .58s var(--ease-spring) forwards,cursed-flicker 4.5s ease-in-out infinite .6s}
+@keyframes cursed-flicker{0%,100%{text-shadow:0 0 10px rgba(200,0,0,.4),0 0 30px rgba(150,0,0,.18);color:#cc0000}18%{color:#880000;text-shadow:0 0 4px rgba(200,0,0,.18)}19%{color:#dd0000;text-shadow:0 0 22px rgba(220,0,0,.75)}38%{text-shadow:0 0 6px rgba(200,0,0,.28)}58%{text-shadow:0 0 20px rgba(200,0,0,.62)}78%{color:#aa0000}}
+
+.result-name.rarity-divine{font-family:'Cinzel',serif;font-weight:700;font-size:40px;letter-spacing:.14em;background:linear-gradient(90deg,#fff7a0,#ffd700,#ffec00,#fff0b0,#ffd700,#ffe680,#fff7a0);background-size:300% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:name-pop .58s var(--ease-spring) forwards,divine-shimmer 2s linear infinite .6s,divine-scale 1.8s ease-in-out infinite .6s}
+@keyframes divine-shimmer{0%{background-position:0% 50%}100%{background-position:300% 50%}}
+@keyframes divine-scale{0%,100%{filter:drop-shadow(0 0 8px rgba(255,215,0,.8)) drop-shadow(0 0 24px rgba(255,220,0,.4))}50%{filter:drop-shadow(0 0 20px rgba(255,215,0,1)) drop-shadow(0 0 60px rgba(255,220,0,.7)) drop-shadow(0 0 100px rgba(255,240,0,.3))}}
+
+.result-name.rarity-spectral{font-family:'Cinzel',serif;font-weight:700;font-size:38px;letter-spacing:.16em;background:linear-gradient(90deg,#00ffff,#0088ff,#aa00ff,#ff0088,#ff4400,#00ffff,#00ccff,#0066ff,#cc00ff,#ff0066,#00ffff);background-size:400% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:name-pop .58s var(--ease-spring) forwards,spectral-rainbow 1.6s linear infinite .6s,spectral-warp .7s ease-in-out infinite .6s}
+@keyframes spectral-rainbow{0%{background-position:0% 50%}100%{background-position:400% 50%}}
+@keyframes spectral-warp{0%,100%{letter-spacing:.16em;filter:drop-shadow(0 0 10px rgba(0,229,255,.9)) drop-shadow(0 0 30px rgba(128,0,255,.5))}50%{letter-spacing:.24em;filter:drop-shadow(0 0 20px rgba(0,229,255,1)) drop-shadow(0 0 50px rgba(255,0,128,.7)) drop-shadow(0 0 80px rgba(128,0,255,.4))}}
+
+/* ── PARTICLES ── */
+.particle{position:absolute;pointer-events:none;animation:ptcl var(--dur,1s) ease-out forwards}
+@keyframes ptcl{0%{transform:translate(0,0) scale(1);opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(0);opacity:0}}
+
+/* ── SCREEN FLASH ── */
+.flash-overlay{position:fixed;inset:0;pointer-events:none;z-index:9999;opacity:0}
+.flash-overlay.legendary-flash{animation:flash-leg  .9s ease-out forwards}
+.flash-overlay.mythic-flash   {animation:flash-mythic 1s ease-out forwards}
+.flash-overlay.cursed-flash   {animation:flash-cursed 1.1s ease-out forwards}
+.flash-overlay.divine-flash   {animation:flash-divine 1.4s ease-out forwards}
+.flash-overlay.spectral-flash {animation:flash-spectral 1.6s ease-out forwards}
+@keyframes flash-leg   {0%{opacity:0}8% {opacity:.32;background:radial-gradient(ellipse at 50% 40%,rgba(255,200,60,.55),rgba(220,120,255,.28) 55%,transparent 80%)}100%{opacity:0}}
+@keyframes flash-mythic{0%{opacity:0}7% {opacity:.45;background:radial-gradient(ellipse at 50% 40%,rgba(255,0,255,.65),rgba(100,0,255,.35) 55%,transparent 80%)}100%{opacity:0}}
+@keyframes flash-cursed{0%{opacity:0}5% {opacity:.38;background:radial-gradient(ellipse at 50% 40%,rgba(200,0,0,.6),rgba(80,0,0,.28) 55%,transparent 80%)}55%{opacity:.12}100%{opacity:0}}
+@keyframes flash-divine  {0%{opacity:0}6% {opacity:.65;background:radial-gradient(ellipse at 50% 30%,rgba(255,255,220,.95),rgba(255,215,0,.6) 40%,rgba(255,180,0,.3) 65%,transparent 85%)}30%{opacity:.2}100%{opacity:0}}
+@keyframes flash-spectral{0%{opacity:0}5% {opacity:.7;background:radial-gradient(ellipse at 50% 40%,rgba(220,255,255,.9),rgba(0,229,255,.55) 35%,rgba(128,0,255,.3) 65%,transparent 85%)}20%{opacity:.35;background:radial-gradient(ellipse at 50% 40%,rgba(255,100,255,.4),rgba(0,200,255,.2) 50%,transparent 80%)}100%{opacity:0}}
+
+.ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.25);transform:scale(0);animation:ripple-out .5s ease-out forwards;pointer-events:none}
+@keyframes ripple-out{to{transform:scale(4);opacity:0}}
+
+/* ── BUTTONS ── */
+.btn-row{display:flex;gap:10px;width:100%;max-width:440px;animation:fade-up .6s var(--ease-out) .18s both}
+.btn{flex:1;border:1px solid var(--border);border-radius:4px;padding:16px 20px;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.15em;text-transform:uppercase;cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s,transform .1s;background:var(--surface);color:var(--text);position:relative;overflow:hidden}
+.btn:active{transform:scale(.965)}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);flex:2}
+.btn-secondary:hover{background:#f5f3f0}
+.btn-secondary:active{background:#ece9e5}
+.btn-icon{flex:0 0 50px;font-size:16px;padding:16px 0}
+
+/* ── BUTTON STYLE THEMES — injected by button-styles.js ── */
+
+/* ── HISTORY TRAY ── */
+.history-tray{width:100%;max-width:440px;display:flex;gap:5px;align-items:center;margin-bottom:10px;min-height:26px;animation:fade-up .6s var(--ease-out) .22s both}
+.hist-chip{font-size:8px;letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:2px;border:1px solid var(--border);background:var(--surface);color:var(--muted);transition:all .25s ease;white-space:nowrap;animation:chip-in .3s var(--ease-spring) both}
+@keyframes chip-in{from{opacity:0;transform:scale(.8) translateY(4px)}to{opacity:1;transform:scale(1) translateY(0)}}
+.hist-chip.rarity-uncommon{border-color:#b8d4b8;color:#3a7a3a;background:#f6fcf6}
+.hist-chip.rarity-rare    {border-color:#9ab8e0;color:#1e3d7a;background:#f4f8ff;font-family:'Cinzel',serif}
+.hist-chip.rarity-legendary{border-color:#c8960a;background:linear-gradient(90deg,#f0c040,#e080ff,#60c0ff,#f0c040);background-size:200% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:chip-in .3s var(--ease-spring) both,leg-rainbow 4s linear infinite;font-family:'Cinzel',serif}
+.hist-chip.rarity-mythic  {border-color:#aa00cc;background:linear-gradient(90deg,#ff00ff,#8800ff,#ff00aa,#ff00ff);background-size:200% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:chip-in .3s var(--ease-spring) both,mythic-rainbow 2s linear infinite;font-family:'Cinzel',serif}
+.hist-chip.rarity-cursed  {border-color:#660000;color:#cc0000;background:#1a0000;font-family:'Uncial Antiqua',cursive;font-size:9px}
+.hist-chip.rarity-divine  {border-color:#ffd700;background:linear-gradient(90deg,#fff7a0,#ffd700,#ffec00,#fff7a0);background-size:200% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:chip-in .3s var(--ease-spring) both,divine-shimmer 2s linear infinite;font-family:'Cinzel',serif}
+.hist-chip.rarity-spectral{border-color:#00e5ff;background:linear-gradient(90deg,#00ffff,#0066ff,#aa00ff,#ff0088,#00ffff);background-size:300% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:chip-in .3s var(--ease-spring) both,spectral-rainbow 1.6s linear infinite;font-family:'Cinzel',serif}
+@keyframes leg-rainbow  {0%{background-position:0% 50%}100%{background-position:200% 50%}}
+@keyframes mythic-rainbow{0%{background-position:0% 50%}100%{background-position:200% 50%}}
+
+/* ── BELOW BUTTONS ── */
+.sub-row{display:flex;gap:8px;width:100%;max-width:440px;margin-top:10px;animation:fade-up .6s var(--ease-out) .28s both}
+.sub-btn{flex:1;font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);cursor:pointer;background:none;border:1px solid var(--border);border-radius:3px;padding:7px 12px;font-family:'DM Mono',monospace;transition:all .15s}
+.sub-btn:hover{color:var(--text);border-color:var(--text);background:rgba(0,0,0,.02)}
+
+/* ── REBIRTH BUTTON ── */
+.rebirth-btn{
+  display:none;width:100%;padding:8px;margin-top:8px;
+  border-radius:3px;font-size:9px;letter-spacing:.22em;text-transform:uppercase;
+  font-family:'Cinzel',serif;cursor:pointer;
+  background:linear-gradient(135deg,#2a0a00,#1a0500);
+  border:1px solid #c84000;color:#ff6020;
+  animation:rebirth-pulse 2.5s ease-in-out infinite;
+  position:relative;overflow:hidden;
+}
+.rebirth-btn::before{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,100,30,.12),transparent);animation:storm-bolt 3s ease-in-out infinite}
+@keyframes rebirth-pulse{0%,100%{box-shadow:0 0 12px rgba(200,80,0,.3),inset 0 0 20px rgba(200,60,0,.05)}50%{box-shadow:0 0 30px rgba(230,100,0,.65),inset 0 0 30px rgba(220,80,0,.12)}}
+.rebirth-btn.show{display:block}
+
+/* ── SAVE STATUS ── */
+.save-status{font-size:9px;letter-spacing:.15em;color:var(--muted);text-transform:uppercase;text-align:center;margin-top:8px;height:14px;transition:color .3s}
+.save-status.saving{color:#888}.save-status.saved{color:#4a7a4a}.save-status.error{color:#aa4444}
+
+/* ── OVERLAYS ── */
+.overlay{position:fixed;inset:0;background:rgba(20,18,14,.65);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;z-index:100;opacity:0;pointer-events:none;transition:opacity .28s ease}
+.overlay.open{opacity:1;pointer-events:all}
+.overlay > *{transform:scale(.96) translateY(8px);transition:transform .32s var(--ease-spring)}
+.overlay.open > *{transform:scale(1) translateY(0)}
+
+/* ── BOOK ── */
+.book{width:700px;max-width:96vw;height:560px;max-height:90vh;position:relative;perspective:1400px}
+.book-cover{position:absolute;inset:0;background:#1c1a17;border-radius:2px 6px 6px 2px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;box-shadow:-6px 0 0 #111,0 0 0 1px rgba(255,255,255,.04) inset,8px 8px 40px rgba(0,0,0,.5);z-index:10;cursor:pointer;transition:transform .65s cubic-bezier(.4,0,.2,1);transform-origin:left center;transform-style:preserve-3d}
+.book-cover::before{content:'';position:absolute;left:18px;top:0;bottom:0;width:3px;background:linear-gradient(180deg,#2a2826,#3a3632,#2a2826,#3a3632,#2a2826);border-radius:0 1px 1px 0}
+.book-cover.opened{transform:rotateY(-160deg);pointer-events:none}
+.bc-title{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;color:#e8e4dc;letter-spacing:.1em}
+.bc-sub  {font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:#555}
+.bc-line {width:60px;height:1px;background:linear-gradient(90deg,transparent,#444,transparent)}
+.bc-tap  {position:absolute;bottom:22px;font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#444}
+
+.book-pages{position:absolute;inset:0;background:var(--book-bg);border-radius:2px 6px 6px 2px;box-shadow:-6px 0 0 #e0ddd8,8px 8px 40px rgba(0,0,0,.28);display:flex;flex-direction:column;overflow:hidden}
+.book-header{padding:22px 32px 16px;border-bottom:1px solid var(--book-border);display:flex;align-items:baseline;justify-content:space-between;flex-shrink:0}
+.book-title{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;letter-spacing:.05em}
+.book-close{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#aaa;cursor:pointer;background:none;border:none;font-family:'DM Mono',monospace;transition:color .15s}
+.book-close:hover{color:#333}
+.book-tabs{display:flex;border-bottom:1px solid var(--book-border);padding:0 28px;flex-shrink:0;overflow-x:auto;gap:0;scrollbar-width:none}
+.book-tabs::-webkit-scrollbar{display:none}
+.tab-btn{font-size:9px;letter-spacing:.13em;text-transform:uppercase;color:#bbb;background:none;border:none;border-bottom:2px solid transparent;padding:10px 11px;cursor:pointer;font-family:'DM Mono',monospace;transition:color .18s,border-color .18s;margin-bottom:-1px;white-space:nowrap}
+.tab-btn:hover{color:#777}
+.tab-btn.active{color:#1c1a17;border-bottom-color:#1c1a17}
+.page-wrap{flex:1;overflow:hidden;position:relative}
+.page{position:absolute;inset:0;overflow-y:auto;padding:18px 28px 24px;transform-origin:left center;transition:transform .42s cubic-bezier(.4,0,.2,1),opacity .28s ease}
+.page.exit-left {transform:rotateY(-88deg) translateX(-16px);opacity:0;pointer-events:none}
+.page.enter-right{transform:rotateY(28deg);opacity:0;pointer-events:none}
+.page.visible   {transform:rotateY(0deg);opacity:1}
+
+/* Book rebirth banner */
+.book-rebirth-banner{display:none;margin:12px 28px 0;padding:10px 16px;background:linear-gradient(135deg,#1a0600,#0d0300);border:1px solid #c84000;border-radius:4px;align-items:center;justify-content:space-between;gap:12px}
+.book-rebirth-banner.show{display:flex}
+.brb-text{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#ff8040;line-height:1.5}
+.brb-count{font-size:11px;color:#ff6020}
+.brb-btn{font-size:8px;letter-spacing:.18em;text-transform:uppercase;padding:7px 16px;border-radius:2px;border:1px solid #c84000;background:rgba(200,80,0,.12);color:#ff8040;cursor:pointer;font-family:'Cinzel',serif;white-space:nowrap;transition:all .2s;animation:rebirth-pulse 2s ease-in-out infinite}
+.brb-btn:hover{background:rgba(200,80,0,.28);color:#ffaa60}
+
+.rarity-section-label{font-size:9px;letter-spacing:.22em;text-transform:uppercase;margin-bottom:10px;padding-bottom:7px;border-bottom:1px solid #ece8e2}
+.names-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:16px}
+.name-entry{padding:7px 9px;border-radius:3px;font-size:13px;font-family:'Cormorant Garamond',serif;font-weight:400;letter-spacing:.03em;background:#f3f0eb;border:1px solid #e8e4de;transition:background .18s,border-color .18s,transform .15s;cursor:default}
+.name-entry:hover{transform:scale(1.02)}
+.name-entry.not-collected{color:#ccc;background:#f7f5f2;border-color:#edeae6}
+.name-entry.not-collected:hover{transform:none}
+.name-entry.collected          {background:#fff;border-color:#d8d4ce;color:#2a2825}
+.name-entry.collected.rarity-uncommon{color:#3a7a3a;border-color:#b8d4b8;background:#f2f9f2}
+.name-entry.collected.rarity-rare    {color:#1e3d7a;border-color:#9ab8e0;background:#f0f5ff;font-family:'Cinzel',serif;font-size:11px}
+.name-entry.collected.rarity-legendary{font-family:'Cinzel',serif;font-size:11px;font-weight:600;border:1px solid #c8960a;background:linear-gradient(90deg,#f0c040,#e080ff,#60c0ff,#f0c040);background-size:200% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:leg-rainbow 4s linear infinite}
+.name-entry.collected.rarity-mythic  {font-family:'Cinzel',serif;font-size:11px;font-weight:700;border:1px solid #aa00cc;background:linear-gradient(90deg,#ff00ff,#8800ff,#ff00aa,#ff00ff);background-size:200% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:mythic-rainbow 2s linear infinite}
+.name-entry.collected.rarity-cursed  {font-family:'Uncial Antiqua',cursive;color:#aa0000;border-color:#660000;background:#160000;font-size:11px}
+.name-entry.collected.rarity-divine  {font-family:'Cinzel',serif;font-size:11px;font-weight:700;border:1px solid #ffd700;background:linear-gradient(90deg,#fff7a0,#ffd700,#ffec00,#fff7a0);background-size:200% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:divine-shimmer 2s linear infinite}
+.name-entry.collected.rarity-spectral{font-family:'Cinzel',serif;font-size:11px;font-weight:700;border:1px solid #00e5ff;background:linear-gradient(90deg,#00ffff,#0066ff,#aa00ff,#ff0088,#00ffff);background-size:300% 100%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:spectral-rainbow 1.6s linear infinite}
+
+.book-footer{padding:12px 32px;border-top:1px solid var(--book-border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.book-count{font-size:10px;letter-spacing:.15em;color:#bbb;text-transform:uppercase}
+.page-nav{display:flex;gap:8px}
+.page-nav button{width:28px;height:28px;border:1px solid #ddd;background:none;border-radius:2px;cursor:pointer;font-size:12px;color:#999;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.page-nav button:hover{background:#f0ede8;color:#333}
+.page-nav button:disabled{opacity:.22;cursor:default}
+
+/* ── SHOP — styled by button-styles.js ── */
+
+/* ── CONSTELLATION ── */
+#constOverlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0);backdrop-filter:blur(0px);
+  display:flex;align-items:center;justify-content:center;z-index:100;
+  pointer-events:none;transition:background .4s ease,backdrop-filter .4s ease;
+}
+#constOverlay.open{background:rgba(2,1,8,.82);backdrop-filter:blur(6px);pointer-events:all}
+
+.constellation-panel{
+  width:860px;max-width:97vw;height:88vh;max-height:800px;
+  background:linear-gradient(160deg,#05030e,#08060f,#060410);
+  border-radius:8px;
+  box-shadow:0 0 0 1px rgba(100,60,200,.2),0 0 60px rgba(60,20,140,.3),0 32px 80px rgba(0,0,0,.7);
+  display:flex;flex-direction:column;overflow:hidden;position:relative;
+  transform:scale(.88) translateY(40px);opacity:0;
+  transition:transform .55s cubic-bezier(.34,1.56,.64,1),opacity .4s ease;
+  pointer-events:none;
+}
+#constOverlay.open .constellation-panel{
+  transform:scale(1) translateY(0);opacity:1;pointer-events:all;
+}
+
+/* Animated star field canvas inside panel */
+.const-starfield{
+  position:absolute;inset:0;pointer-events:none;z-index:0;border-radius:8px;overflow:hidden;
+}
+#constStarCanvas{position:absolute;inset:0;width:100%;height:100%}
+
+/* Shooting star on open */
+.const-shoot{
+  position:absolute;height:1px;border-radius:1px;
+  background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.9),rgba(200,180,255,.6));
+  pointer-events:none;z-index:1;
+  animation:shoot-across var(--dur,.6s) ease-out var(--delay,0s) both;
+}
+@keyframes shoot-across{
+  0%{transform:translateX(0) scaleX(0);opacity:0}
+  10%{opacity:1}
+  100%{transform:translateX(var(--tx,200px)) scaleX(1);opacity:0}
+}
+
+/* Header */
+.const-header{
+  padding:22px 28px 14px;border-bottom:1px solid rgba(100,60,200,.18);
+  display:flex;align-items:flex-start;justify-content:space-between;flex-shrink:0;
+  position:relative;z-index:5;
+  background:linear-gradient(180deg,rgba(5,3,14,.9),rgba(5,3,14,.6));
+  backdrop-filter:blur(4px);
+}
+.const-header-left{display:flex;flex-direction:column;gap:3px}
+.const-title{
+  font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:300;
+  color:#d8c8ff;letter-spacing:.12em;
+  text-shadow:0 0 20px rgba(180,120,255,.3);
+}
+.const-sub{font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:#4a3870;margin-top:2px}
+
+/* Stats strip */
+.const-stats-strip{
+  display:flex;gap:20px;margin-top:10px;
+}
+.const-stat{
+  display:flex;flex-direction:column;gap:2px;
+}
+.const-stat-val{
+  font-size:18px;font-family:'Cinzel',serif;font-weight:600;color:#c8a8f0;
+  text-shadow:0 0 12px rgba(180,100,255,.4);
+}
+.const-stat-label{font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:#4a3870}
+
+.const-close{
+  font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#4a3870;cursor:pointer;
+  background:rgba(80,50,140,.12);border:1px solid rgba(100,60,180,.25);
+  font-family:'DM Mono',monospace;transition:all .2s;padding:7px 12px;border-radius:2px;
+  margin-top:4px;
+}
+.const-close:hover{color:#c8a8f0;border-color:rgba(150,100,220,.5);background:rgba(100,70,180,.22)}
+
+/* Search + filter bar */
+.const-filter-bar{
+  display:flex;gap:8px;padding:10px 28px;flex-shrink:0;
+  border-bottom:1px solid rgba(60,40,120,.2);
+  position:relative;z-index:5;
+  background:rgba(5,3,14,.7);backdrop-filter:blur(4px);
+  align-items:center;
+}
+.const-search{
+  flex:1;background:rgba(20,14,40,.7);border:1px solid rgba(80,50,140,.3);border-radius:3px;
+  color:#c8b8f0;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.08em;
+  padding:7px 12px;outline:none;transition:border-color .2s,box-shadow .2s;
+}
+.const-search::placeholder{color:#3a2860}
+.const-search:focus{border-color:rgba(140,90,220,.5);box-shadow:0 0 12px rgba(120,70,200,.15)}
+.const-filter-btn{
+  font-size:8px;letter-spacing:.14em;text-transform:uppercase;color:#6050a0;
+  background:rgba(40,24,80,.5);border:1px solid rgba(80,50,140,.3);border-radius:2px;
+  padding:7px 11px;cursor:pointer;font-family:'DM Mono',monospace;transition:all .18s;
+  white-space:nowrap;
+}
+.const-filter-btn:hover{color:#b090e8;border-color:rgba(130,80,200,.4);background:rgba(60,36,120,.5)}
+.const-filter-btn.active{color:#c8a8f0;border-color:rgba(150,100,220,.55);background:rgba(80,50,160,.4)}
+
+/* Body grid */
+.const-body{
+  flex:1;overflow-y:auto;padding:16px 24px 20px;
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;
+  position:relative;z-index:5;
+  scrollbar-width:thin;scrollbar-color:rgba(100,60,200,.25) transparent;
+}
+.const-body::-webkit-scrollbar{width:3px}
+.const-body::-webkit-scrollbar-thumb{background:rgba(100,60,200,.3);border-radius:2px}
+.const-body::-webkit-scrollbar-track{background:transparent}
+
+/* Constellation group cards */
+.const-group{
+  border:1px solid rgba(40,28,80,.8);border-radius:6px;padding:14px 16px;
+  background:rgba(8,5,18,.75);
+  transition:border-color .35s,box-shadow .35s,transform .2s;cursor:default;
+  position:relative;overflow:hidden;
+  animation:const-card-in .5s var(--ease-spring) var(--delay,0s) both;
+}
+@keyframes const-card-in{
+  from{opacity:0;transform:translateY(18px) scale(.94)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+.const-group::before{
+  content:'';position:absolute;inset:0;border-radius:6px;
+  background:radial-gradient(ellipse at 80% 20%,rgba(80,40,150,.06),transparent 60%);
+  pointer-events:none;
+}
+.const-group:hover{
+  border-color:rgba(80,50,160,.4);
+  box-shadow:0 0 18px rgba(80,50,160,.12);
+  transform:translateY(-1px);
+}
+.const-group.complete{
+  border-color:rgba(100,60,220,.5);
+  box-shadow:0 0 24px rgba(96,64,192,.2),0 0 48px rgba(80,40,160,.08);
+}
+.const-group.complete::after{
+  content:'';position:absolute;top:0;right:0;width:40px;height:40px;
+  background:radial-gradient(circle at 100% 0%,rgba(140,80,255,.18),transparent 70%);
+}
+
+.const-rarity-dot{
+  width:6px;height:6px;border-radius:50%;display:inline-block;margin-right:6px;
+  box-shadow:0 0 6px currentColor;vertical-align:middle;
+}
+.const-group-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+.const-group-name{
+  font-family:'Cormorant Garamond',serif;font-size:15px;font-weight:400;
+  color:#9880c8;letter-spacing:.06em;display:flex;align-items:center;
+}
+.const-group-reward{
+  font-size:7px;letter-spacing:.2em;text-transform:uppercase;
+  color:#3a2860;background:rgba(40,20,80,.6);border:1px solid rgba(60,30,120,.3);
+  border-radius:2px;padding:2px 7px;transition:all .3s;
+}
+.const-group.complete .const-group-reward{
+  color:#c8a8f0;border-color:rgba(140,90,220,.4);background:rgba(80,40,140,.3);
+}
+.const-progress-line{
+  font-size:8px;letter-spacing:.18em;text-transform:uppercase;
+  color:#3a2860;margin-bottom:8px;transition:color .3s;
+}
+.const-group.complete .const-progress-line{color:#8060d0}
+
+.const-mini-bar{height:2px;background:rgba(30,20,50,.8);border-radius:1px;overflow:hidden;margin-bottom:10px}
+.const-mini-fill{
+  height:100%;background:linear-gradient(90deg,#4030a0,#9060e0);
+  border-radius:1px;transition:width .6s var(--ease-out);
+}
+.const-group.complete .const-mini-fill{background:linear-gradient(90deg,#8040e0,#c080ff,#e0b0ff)}
+
+.const-stars{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:8px}
+.const-star{
+  font-size:9px;letter-spacing:.04em;padding:3px 7px;border-radius:2px;
+  border:1px solid rgba(30,22,50,.9);color:#1e1630;background:rgba(8,5,16,.6);
+  transition:all .3s;font-family:'Cormorant Garamond',serif;
+}
+.const-star.found{
+  color:#b8a8e0;border-color:rgba(70,45,150,.5);background:rgba(18,12,36,.7);
+  text-shadow:0 0 6px rgba(160,130,230,.25);
+}
+.const-star.found.new-find{animation:star-burst .55s var(--ease-spring)}
+@keyframes star-burst{0%{transform:scale(1)}40%{transform:scale(1.4);background:rgba(40,22,90,.8);color:#e0d0ff;border-color:rgba(160,100,255,.6)}100%{transform:scale(1)}}
+.const-star.search-match{border-color:rgba(200,160,80,.6)!important;box-shadow:0 0 8px rgba(200,160,80,.25)!important}
+
+/* Lore quote on completed constellations */
+.const-lore{
+  font-size:9px;font-style:italic;color:#4a3870;letter-spacing:.04em;line-height:1.5;
+  border-top:1px solid rgba(50,30,100,.3);padding-top:7px;margin-top:4px;
+  display:none;
+}
+.const-group.complete .const-lore{display:block;color:#7060a8}
+
+/* Footer */
+.const-footer{
+  padding:10px 28px;border-top:1px solid rgba(60,40,120,.18);
+  font-size:9px;letter-spacing:.15em;color:#3a2860;text-transform:uppercase;
+  flex-shrink:0;display:flex;justify-content:space-between;align-items:center;
+  position:relative;z-index:5;
+  background:rgba(4,2,10,.7);backdrop-filter:blur(4px);
+}
+.const-complete-badge{color:#8060d0;letter-spacing:.12em}
+.const-total-bar{display:flex;align-items:center;gap:8px}
+.const-total-fill-wrap{width:80px;height:3px;background:rgba(30,20,50,.8);border-radius:2px;overflow:hidden}
+.const-total-fill{height:100%;background:linear-gradient(90deg,#6040c0,#c080ff);border-radius:2px;transition:width .6s}
+
+/* ══════════════════════════════════════════════════════════
+   RUNE CRAFTING
+   ══════════════════════════════════════════════════════════ */
+
+/* Sub-btn rune accent */
+.sub-btn-rune{color:#a060e0;border-color:rgba(130,60,200,.35)}
+.sub-btn-rune:hover{color:#c090ff;border-color:rgba(160,90,255,.6);background:rgba(120,60,180,.07);box-shadow:0 0 12px rgba(140,70,220,.18)}
+
+/* Overlay */
+#runeOverlay{
+  position:fixed;inset:0;background:rgba(2,0,8,.88);backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;z-index:100;
+  opacity:0;pointer-events:none;transition:opacity .35s ease;
+}
+#runeOverlay.open{opacity:1;pointer-events:all}
+
+.rune-panel{
+  width:900px;max-width:97vw;height:90vh;max-height:820px;
+  background:linear-gradient(150deg,#060210,#0a0318,#08021a);
+  border-radius:10px;
+  border:1px solid rgba(120,60,220,.22);
+  box-shadow:0 0 0 1px rgba(80,30,160,.15),0 0 80px rgba(100,30,200,.2),0 40px 80px rgba(0,0,0,.7);
+  display:flex;flex-direction:column;overflow:hidden;position:relative;
+  transform:scale(.88) translateY(48px);opacity:0;
+  transition:transform .5s cubic-bezier(.34,1.56,.64,1),opacity .38s ease;
+}
+#runeOverlay.open .rune-panel{transform:scale(1) translateY(0);opacity:1}
+
+/* Rune crafting area */
+.rune-bg-glow{
+  position:absolute;inset:0;pointer-events:none;z-index:0;overflow:hidden;border-radius:10px;
+}
+.rune-bg-glow::before{
+  content:'';position:absolute;
+  width:500px;height:500px;border-radius:50%;
+  background:radial-gradient(circle,rgba(150,50,255,.18),rgba(100,20,220,.08),transparent 70%);
+  top:-150px;left:-150px;
+  animation:rune-bg-drift1 12s ease-in-out infinite alternate;
+}
+.rune-bg-glow::after{
+  content:'';position:absolute;
+  width:400px;height:400px;border-radius:50%;
+  background:radial-gradient(circle,rgba(80,0,180,.12),transparent 70%);
+  bottom:-120px;right:-100px;
+  animation:rune-bg-drift2 14s ease-in-out infinite alternate;
+}
+@keyframes rune-bg-drift1{from{transform:translate(0,0) scale(1)}to{transform:translate(120px,80px) scale(1.4)}}
+@keyframes rune-bg-drift2{from{transform:translate(0,0) scale(1)}to{transform:translate(-90px,-60px) scale(1.3)}}
+
+/* Slot area */
+.rune-slots{
+  display:flex;gap:16px;margin-bottom:28px;flex-wrap:wrap;
+}
+.rune-slot{
+  width:150px;height:70px;border:2px dashed rgba(140,80,240,.4);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;position:relative;
+  background:linear-gradient(135deg,rgba(30,10,70,.6),rgba(20,5,50,.4));
+  cursor:pointer;transition:all .3s cubic-bezier(.34,1.56,.64,1);
+  overflow:hidden;box-shadow:inset 0 0 12px rgba(100,40,200,.1);
+}
+.rune-slot::before{
+  content:'';position:absolute;inset:0;border-radius:6px;
+  background:radial-gradient(circle at 30% 30%, rgba(180,100,255,.12), transparent 60%);
+  opacity:0;transition:opacity .3s;
+}
+.rune-slot:hover{
+  border-color:rgba(200,120,255,.75);
+  background:linear-gradient(135deg,rgba(50,20,100,.9),rgba(35,10,80,.6));
+  box-shadow:0 0 24px rgba(140,80,240,.35),inset 0 0 16px rgba(140,80,240,.15);
+  transform:translateY(-2px);
+}
+.rune-slot:hover::before{opacity:1}
+.rune-slot.filled{
+  border-style:solid;
+  border-color:rgba(180,100,255,.7);
+  background:linear-gradient(135deg,rgba(50,20,100,.85),rgba(40,15,90,.7));
+  box-shadow:0 0 20px rgba(180,100,255,.4),inset 0 0 20px rgba(180,100,255,.1);
+}
+.rune-slot.filled:hover{
+  border-color:rgba(220,150,255,.9);
+  box-shadow:0 0 32px rgba(200,120,255,.6),inset 0 0 24px rgba(200,120,255,.2);
+}
+.rune-slot-label{font-size:8px;letter-spacing:.15em;text-transform:uppercase;color:#5a3090;font-family:'DM Mono',monospace}
+.rune-slot-name{
+  font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:400;color:#e8d0ff;
+  letter-spacing:.08em;text-align:center;padding:6px 10px;
+  text-shadow:0 0 8px rgba(180,100,255,.5);
+}
+.rune-slot-rarity-bar{position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 6px 6px}
+.rune-slot-remove{
+  position:absolute;top:6px;right:8px;font-size:11px;color:#6a4a90;cursor:pointer;
+  line-height:1;transition:all .2s;font-weight:bold;
+}
+.rune-slot-remove:hover{
+  color:#ff8aaa;
+  text-shadow:0 0 8px rgba(255,100,150,.6);
+  transform:scale(1.2);
+}
+
+/* Rune glyph preview in slot */
+.rune-slot-glyph{
+  position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  font-size:22px;opacity:.4;transition:all .25s;
+  filter:drop-shadow(0 0 4px rgba(180,100,255,.2));
+}
+.rune-slot.filled .rune-slot-glyph{
+  opacity:1;
+  filter:drop-shadow(0 0 8px rgba(180,100,255,.6));
+  animation:rune-glyph-pulse 2s ease-in-out infinite;
+}
+@keyframes rune-glyph-pulse{0%,100%{transform:translateY(-50%) scale(1)}50%{transform:translateY(-50%) scale(1.15)}}
+
+/* Forge button */
+.rune-forge-btn{
+  width:100%;padding:16px;margin-bottom:24px;
+  background:linear-gradient(135deg,#2a0e60,#3c1a80,#2a0e60);
+  border:2px solid rgba(180,100,255,.5);border-radius:8px;
+  color:#e8d0ff;font-family:'Cinzel',serif;font-size:12px;letter-spacing:.22em;
+  cursor:pointer;transition:all .3s cubic-bezier(.34,1.56,.64,1);position:relative;overflow:hidden;
+  text-shadow:0 0 16px rgba(200,120,255,.6);
+  font-weight:500;text-transform:uppercase;
+  box-shadow:0 0 20px rgba(160,80,255,.3),inset 0 0 16px rgba(180,100,255,.1);
+}
+.rune-forge-btn::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(90deg,transparent,rgba(220,150,255,.15),transparent);
+  transform:translateX(-100%);transition:transform .5s ease;
+}
+.rune-forge-btn:hover::before{transform:translateX(100%)}
+.rune-forge-btn:hover{
+  background:linear-gradient(135deg,#3c1a80,#5a2a95,#3c1a80);
+  border-color:rgba(220,150,255,.8);
+  box-shadow:0 0 40px rgba(200,120,255,.5),0 0 80px rgba(180,100,255,.25),inset 0 0 20px rgba(220,150,255,.2);
+  transform:translateY(-2px);
+  color:#fff;
+}
+.rune-forge-btn:active{transform:translateY(0) scale(.98)}
+.rune-forge-btn:disabled{opacity:.3;cursor:default;transform:none}
+.rune-forge-btn:disabled::before{display:none}
+
+/* Name picker */
+.rune-picker-search{
+  width:100%;background:rgba(16,6,40,.7);border:1px solid rgba(80,40,140,.35);border-radius:4px;
+  color:#c0a0f0;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;
+  padding:8px 12px;outline:none;margin-bottom:10px;transition:border-color .2s,box-shadow .2s;
+  box-sizing:border-box;
+}
+.rune-picker-search::placeholder{color:#3a2060}
+.rune-picker-search:focus{border-color:rgba(140,80,240,.5);box-shadow:0 0 14px rgba(120,60,220,.15)}
+
+.rune-name-grid{
+  display:flex;flex-wrap:wrap;gap:5px;max-height:220px;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:rgba(100,50,200,.2) transparent;
+}
+.rune-name-grid::-webkit-scrollbar{width:3px}
+.rune-name-grid::-webkit-scrollbar-thumb{background:rgba(100,50,200,.25);border-radius:2px}
+
+.rune-name-chip{
+  font-size:9px;letter-spacing:.06em;padding:4px 10px;border-radius:3px;
+  border:1px solid rgba(60,30,100,.5);color:#7050b0;background:rgba(16,6,40,.6);
+  cursor:pointer;transition:all .16s;font-family:'Cormorant Garamond',serif;font-size:12px;
+}
+.rune-name-chip:hover{color:#d0b0ff;border-color:rgba(140,80,240,.55);background:rgba(40,16,80,.7);box-shadow:0 0 8px rgba(120,60,200,.2)}
+.rune-name-chip.selected{color:#e0c8ff;border-color:rgba(180,100,255,.6);background:rgba(60,24,120,.7);box-shadow:0 0 10px rgba(160,80,255,.25)}
+.rune-name-chip.in-use{opacity:.3;cursor:default;pointer-events:none}
+
+/* Rarity colors for name chips */
+.rune-chip-common{color:#7070a0;border-color:rgba(80,80,120,.4)}
+.rune-chip-uncommon{color:#507050;border-color:rgba(60,100,60,.4)}
+.rune-chip-rare{color:#405090;border-color:rgba(40,60,140,.4)}
+.rune-chip-legendary{color:#906020;border-color:rgba(140,90,20,.4)}
+.rune-chip-mythic{color:#8030c0;border-color:rgba(120,40,180,.4)}
+.rune-chip-cursed{color:#802020;border-color:rgba(120,30,30,.4)}
+.rune-chip-divine{color:#909020;border-color:rgba(140,130,20,.4)}
+.rune-chip-spectral{color:#2080a0;border-color:rgba(20,120,160,.4)}
+
+/* Right: equipped rings panel */
+.rune-rings-panel{
+  display:flex;flex-direction:column;padding:20px 18px;background:rgba(4,1,12,.4);
+  overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(100,50,200,.2) transparent;
+}
+.rune-rings-panel::-webkit-scrollbar{width:3px}
+.rune-rings-panel::-webkit-scrollbar-thumb{background:rgba(100,50,200,.25);border-radius:2px}
+
+.rune-equipped-list{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.rune-ring-card{
+  border:2px solid rgba(120,60,220,.35);border-radius:8px;padding:14px;
+  background:linear-gradient(135deg,rgba(20,8,50,.8),rgba(15,5,40,.6));
+  position:relative;overflow:hidden;
+  transition:all .3s cubic-bezier(.34,1.56,.64,1);
+  animation:ring-card-in .4s var(--ease-spring) both;
+  box-shadow:0 0 16px rgba(100,40,200,.2),inset 0 0 12px rgba(140,80,240,.08);
+}
+@keyframes ring-card-in{
+  from{opacity:0;transform:translateX(20px) scale(.94)}
+  to{opacity:1;transform:translateX(0) scale(1)}
+}
+.rune-ring-card:hover{
+  border-color:rgba(200,120,255,.65);
+  box-shadow:0 0 28px rgba(160,80,255,.4),inset 0 0 16px rgba(180,100,255,.15);
+  transform:translateY(-2px);
+}
+.rune-ring-card.slot-empty{
+  border:2px dashed rgba(80,40,140,.3);background:linear-gradient(135deg,rgba(12,4,28,.5),rgba(8,2,18,.3));
+  display:flex;align-items:center;justify-content:center;min-height:70px;
+}
+.rune-ring-empty-label{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:#3a2070;font-family:'DM Mono',monospace}
+
+.rune-ring-name{
+  font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:400;
+  color:#e8d0ff;letter-spacing:.08em;margin-bottom:6px;
+  display:flex;align-items:center;gap:8px;
+  text-shadow:0 0 8px rgba(180,100,255,.4);
+}
+.rune-ring-gem{
+  display:inline-block;font-size:16px;
+  filter:drop-shadow(0 0 6px rgba(180,100,255,.6));
+  animation:gem-pulse 2s ease-in-out infinite;
+}
+@keyframes gem-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+.rune-ring-effect{
+  font-size:9px;letter-spacing:.06em;color:#8a7aa0;line-height:1.6;margin-bottom:8px;
+  font-family:'DM Mono',monospace;
+}
+.rune-ring-footer{
+  display:flex;align-items:center;justify-content:space-between;
+}
+.rune-ring-rarity{
+  font-size:8px;letter-spacing:.2em;text-transform:uppercase;
+  padding:3px 9px;border-radius:3px;font-weight:500;
+}
+.rune-ring-unequip{
+  font-size:8px;letter-spacing:.15em;text-transform:uppercase;color:#5a3a90;
+  cursor:pointer;background:rgba(40,15,80,.4);border:1px solid rgba(80,40,140,.4);
+  border-radius:3px;padding:4px 10px;font-family:'DM Mono',monospace;
+  transition:all .2s;font-weight:500;
+}
+.rune-ring-unequip:hover{
+  color:#ff7aaa;
+  border-color:rgba(220,80,140,.6);
+  background:rgba(100,20,60,.5);
+  box-shadow:0 0 12px rgba(255,100,150,.3);
+}
+
+/* Ring shimmer overlay based on rarity */
+.rune-ring-card::before{
+  content:'';position:absolute;inset:0;border-radius:8px;pointer-events:none;
+  opacity:.4;
+}
+.rune-ring-card.ring-common::before{background:linear-gradient(135deg,rgba(150,150,180,.06),transparent)}
+.rune-ring-card.ring-rare::before{background:linear-gradient(135deg,rgba(100,140,255,.1),transparent);animation:ring-rare-pulse 3s ease-in-out infinite}
+.rune-ring-card.ring-legendary::before{background:linear-gradient(135deg,rgba(220,180,40,.12),rgba(200,160,20,.05),transparent);animation:ring-legendary-pulse 2.8s ease-in-out infinite}
+.rune-ring-card.ring-mythic::before{background:linear-gradient(135deg,rgba(200,60,255,.15),rgba(120,20,220,.08),transparent);animation:ring-mythic-shimmer 2.5s ease-in-out infinite}
+.rune-ring-card.ring-divine::before{background:linear-gradient(135deg,rgba(255,240,60,.15),rgba(255,200,40,.08),transparent);animation:ring-divine-shimmer 2.2s ease-in-out infinite}
+.rune-ring-card.ring-spectral::before{background:linear-gradient(135deg,rgba(0,220,255,.15),rgba(200,20,255,.1),transparent);animation:ring-spectral-shimmer 2s ease-in-out infinite}
+@keyframes ring-rare-pulse{0%,100%{opacity:.3}50%{opacity:.6}}
+@keyframes ring-legendary-pulse{0%,100%{opacity:.35}50%{opacity:.75}}
+@keyframes ring-mythic-shimmer{0%,100%{opacity:.4}50%{opacity:.8}}
+@keyframes ring-divine-shimmer{0%,100%{opacity:.35}50%{opacity:.85}}
+@keyframes ring-spectral-shimmer{0%,100%{opacity:.35}33%{opacity:.95}66%{opacity:.5}}
+
+/* ── Orbiting rings around the card ── */
+.ring-orbit-wrap{
+  position:absolute;inset:0;pointer-events:none;z-index:0;overflow:visible;
+}
+.ring-orbit{
+  position:absolute;border-radius:50%;border:1.5px solid transparent;
+  pointer-events:none;
+  animation:orbit-spin var(--dur,8s) linear infinite var(--dir,normal);
+}
+@keyframes orbit-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.ring-orbit-dot{
+  position:absolute;top:-4px;left:50%;transform:translateX(-50%);
+  width:7px;height:7px;border-radius:50%;
+  box-shadow:0 0 6px 2px var(--dot-glow,rgba(180,100,255,.8));
+}
+
+/* Forge animation overlay */
+#runeForgeAnim{
+  position:fixed;inset:0;z-index:9999;pointer-events:none;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;transition:opacity .2s;
+}
+#runeForgeAnim.active{opacity:1}
+.rfa-ring{
+  position:absolute;border-radius:50%;border:2px solid transparent;
+  animation:rfa-spin var(--dur,1s) linear infinite;
+}
+@keyframes rfa-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+.rfa-particle{
+  position:absolute;width:4px;height:4px;border-radius:50%;
+  animation:rfa-fly var(--dur,.8s) ease-out var(--delay,0s) both;
+}
+@keyframes rfa-fly{
+  0%{transform:translate(0,0) scale(1);opacity:1}
+  100%{transform:translate(var(--tx,0),var(--ty,-60px)) scale(0);opacity:0}
+}
+.rfa-flash{
+  position:absolute;inset:0;border-radius:50%;
+  animation:rfa-flash-anim .5s ease-out both;
+}
+@keyframes rfa-flash-anim{
+  0%{transform:scale(0);opacity:1}
+  60%{transform:scale(3);opacity:.4}
+  100%{transform:scale(5);opacity:0}
+}
+.rfa-name-spiral{
+  position:absolute;font-family:'Cormorant Garamond',serif;font-size:14px;
+  color:#d0a0ff;letter-spacing:.1em;white-space:nowrap;
+  animation:rfa-spiral var(--dur,.6s) ease-in var(--delay,0s) both;
+}
+@keyframes rfa-spiral{
+  0%{transform:translate(var(--sx,0px),var(--sy,0px)) scale(1) rotate(0deg);opacity:1}
+  100%{transform:translate(0,0) scale(0) rotate(var(--rot,180deg));opacity:0}
+}
+
+
+
+
+/* ── Ring aura animations on roll card ── */
+@keyframes rune-aura-spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes rune-aura-pulse{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:.9;transform:scale(1.04)}}
+
+#card.rune-aura-golden{box-shadow:0 0 0 1px rgba(220,160,20,.25),0 0 20px rgba(200,140,10,.2),var(--card-shadow,none)!important}
+#card.rune-aura-golden::after{content:'';position:absolute;inset:-3px;border-radius:9px;border:1px solid rgba(220,160,20,.3);animation:rune-aura-pulse 2.5s ease-in-out infinite;pointer-events:none}
+#card.rune-aura-golden-triple{box-shadow:0 0 0 1px rgba(240,200,20,.3),0 0 28px rgba(200,160,0,.3)!important}
+#card.rune-aura-golden-triple::after{content:'';position:absolute;inset:-4px;border-radius:10px;border:2px solid rgba(240,200,20,.35);animation:rune-aura-pulse 1.8s ease-in-out infinite;pointer-events:none}
+#card.rune-aura-mythic{box-shadow:0 0 0 1px rgba(160,40,240,.25),0 0 22px rgba(140,20,220,.18)!important}
+#card.rune-aura-mythic::after{content:'';position:absolute;inset:-3px;border-radius:9px;border:1px solid rgba(180,60,255,.3);animation:rune-aura-pulse 2s ease-in-out infinite;pointer-events:none}
+#card.rune-aura-spectral{box-shadow:0 0 0 1px rgba(0,180,240,.25),0 0 24px rgba(0,160,220,.2)!important}
+#card.rune-aura-spectral::after{content:'';position:absolute;inset:-3px;border-radius:9px;border:1px solid rgba(0,200,255,.3);animation:rune-aura-pulse 1.6s ease-in-out infinite;pointer-events:none}
+#card.rune-aura-divine{box-shadow:0 0 0 1px rgba(220,190,20,.28),0 0 20px rgba(200,170,10,.18)!important}
+#card.rune-aura-divine::after{content:'';position:absolute;inset:-3px;border-radius:9px;border:1px solid rgba(240,210,20,.32);animation:rune-aura-pulse 2.2s ease-in-out infinite;pointer-events:none}
+#card.rune-aura-cursed{box-shadow:0 0 0 1px rgba(200,30,30,.25),0 0 20px rgba(180,10,10,.18)!important}
+#card.rune-aura-cursed::after{content:'';position:absolute;inset:-3px;border-radius:9px;border:1px solid rgba(220,40,40,.3);animation:rune-aura-pulse 1.4s ease-in-out infinite;pointer-events:none}
+#card.rune-aura-blue{box-shadow:0 0 0 1px rgba(40,100,220,.22),0 0 18px rgba(20,80,200,.15)!important}
+#card.rune-aura-divine-spectral{box-shadow:0 0 0 1px rgba(180,160,20,.22),0 0 22px rgba(0,150,220,.15)!important}
+#card.rune-aura-mythic-spectral{box-shadow:0 0 0 1px rgba(140,40,220,.22),0 0 22px rgba(0,140,200,.15)!important}
+#card.rune-aura-god{box-shadow:0 0 0 1px rgba(200,170,60,.28),0 0 28px rgba(180,140,20,.2),0 0 40px rgba(160,60,255,.1)!important}
+#card.rune-aura-lightning{box-shadow:0 0 0 1px rgba(200,180,60,.22),0 0 20px rgba(180,160,40,.15)!important}
+#card.rune-aura-crown{box-shadow:0 0 0 1px rgba(200,160,30,.25),0 0 22px rgba(180,140,10,.18)!important}
+#card.rune-aura-corruption{box-shadow:0 0 0 1px rgba(160,20,220,.22),0 0 20px rgba(140,10,200,.15)!important}
+#card.rune-aura-hex{box-shadow:0 0 0 1px rgba(160,30,160,.22),0 0 18px rgba(140,20,140,.15)!important}
+#card.rune-aura-purple{box-shadow:0 0 0 1px rgba(120,40,200,.22),0 0 18px rgba(100,20,180,.15)!important}
+#card.rune-aura-sapphire{box-shadow:0 0 0 1px rgba(40,100,220,.25),0 0 22px rgba(20,80,200,.2)!important}
+#card.rune-aura-green{box-shadow:0 0 0 1px rgba(40,160,60,.22),0 0 18px rgba(20,140,40,.15)!important}
+
+/* ── REBIRTH CUTSCENE ── */
+#rebirthCutscene{
+  position:fixed;inset:0;z-index:9000;background:#000;
+  display:none;flex-direction:column;align-items:center;justify-content:center;
+  overflow:hidden;animation:cutscene-fade-in .4s ease forwards;
+}
+#rebirthCutscene.active{display:flex}
+@keyframes cutscene-fade-in{from{opacity:0}to{opacity:1}}
+
+.rb-fire-bg{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 120%,rgba(255,120,0,.5),rgba(255,60,0,.25) 40%,rgba(100,0,0,.15) 70%,transparent 100%);
+  opacity:0;transition:opacity 1.2s ease-out;
+  filter:blur(2px);
+  animation:fire-glow 3s ease-in-out infinite;
+}
+.rb-fire-bg.show{opacity:1}
+@keyframes fire-glow{0%,100%{filter:blur(2px) brightness(1)}50%{filter:blur(3px) brightness(1.3)}}
+
+.rb-name-pile{position:absolute;width:100%;height:100%;pointer-events:none}
+.rb-name-item{
+  position:absolute;font-family:'Cormorant Garamond',serif;font-weight:600;
+  white-space:nowrap;opacity:0;pointer-events:none;
+  filter:drop-shadow(0 0 2px rgba(0,0,0,.8));
+  animation:rb-rise-v2 var(--dur,1.2s) var(--ease-spring) var(--delay,0s) forwards;
+}
+@keyframes rb-rise-v2{
+  0%{opacity:0;transform:translateY(200px) scale(.2) rotate(var(--rot,0deg));filter:blur(4px)}
+  30%{opacity:.9}
+  100%{opacity:1;transform:translateY(var(--ty,-80px)) scale(1) rotate(var(--rot2,0deg));filter:blur(0)}
+}
+
+.rb-name-item.burning{
+  animation:rb-burn-v2 var(--bdur,1s) ease-in var(--bdelay,0s) forwards;
+}
+@keyframes rb-burn-v2{
+  0%{opacity:1;filter:drop-shadow(0 0 2px rgba(0,0,0,.8)) brightness(1);transform:translateY(var(--ty,-80px)) scale(1) rotate(var(--rot2,0deg))}
+  15%{filter:drop-shadow(0 0 4px rgba(255,100,0,.8)) brightness(1.8) sepia(0.8) hue-rotate(20deg);color:#ffaa40}
+  35%{filter:drop-shadow(0 0 8px rgba(255,120,0,.9)) brightness(2.2) sepia(1) hue-rotate(10deg) saturate(3);color:#ff6600;transform:translateY(calc(var(--ty,-80px) - 20px)) scale(.9)}
+  60%{opacity:.6;filter:drop-shadow(0 0 12px rgba(255,80,0,.6)) brightness(2.8) sepia(1) blur(1px);color:#ff4400;transform:translateY(calc(var(--ty,-80px) - 50px)) scale(.6) rotate(calc(var(--rot2,0deg) + 12deg))}
+  100%{opacity:0;filter:drop-shadow(0 0 16px rgba(255,60,0,0)) brightness(3) blur(6px);transform:translateY(calc(var(--ty,-80px) - 140px)) scale(.05) rotate(calc(var(--rot2,0deg) + 30deg))}
+}
+
+.rb-ash-particle{
+  position:absolute;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle, rgba(255,140,60,0.9), rgba(200,80,20,0.6));
+  box-shadow:0 0 4px rgba(255,100,0,.7);
+  animation:ash-float-v2 var(--adur,3s) ease-out var(--adelay,0s) forwards;
+}
+@keyframes ash-float-v2{
+  0%{opacity:.95;transform:translate(0,0) scale(1);filter:blur(0)}
+  40%{opacity:.7;filter:blur(0.5px)}
+  100%{opacity:0;transform:translate(var(--ax,0px),var(--ay,-200px)) scale(.05);filter:blur(2px)}
+}
+
+.rb-title{
+  font-family:'Cinzel',serif;font-size:56px;font-weight:700;letter-spacing:.25em;
+  color:#fff;text-align:center;opacity:0;position:relative;z-index:2;
+  text-shadow:0 0 40px rgba(255,120,0,.9),0 0 80px rgba(255,80,0,.5),0 0 120px rgba(200,40,0,.3);
+  animation:none;word-spacing:.2em;
+}
+.rb-title.show{animation:rb-title-in-v2 .9s var(--ease-spring) forwards}
+@keyframes rb-title-in-v2{
+  0%{opacity:0;transform:scale(.3) translateY(60px);filter:blur(8px)}
+  40%{opacity:.8;filter:blur(2px)}
+  60%{opacity:1;transform:scale(1.15) translateY(-8px)}
+  100%{opacity:1;transform:scale(1) translateY(0);text-shadow:0 0 40px rgba(255,120,0,.9),0 0 80px rgba(255,80,0,.5),0 0 120px rgba(200,40,0,.3)}
+}
+
+.rb-subtitle{
+  font-size:13px;letter-spacing:.35em;text-transform:uppercase;color:#ffaa66;text-align:center;margin-top:16px;opacity:0;
+  position:relative;z-index:2;font-weight:500;
+  text-shadow:0 0 20px rgba(255,150,80,.6);
+}
+.rb-subtitle.show{animation:rb-subtitle-in .7s ease .5s forwards}
+@keyframes rb-subtitle-in{
+  from{opacity:0;transform:translateY(20px);filter:blur(3px)}
+  to{opacity:1;transform:translateY(0);filter:blur(0)}
+}
+
+.rb-skip{
+  position:absolute;bottom:28px;right:32px;font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  color:rgba(255,255,255,.2);cursor:pointer;border:1px solid rgba(255,255,255,.15);
+  border-radius:2px;padding:8px 14px;background:rgba(0,0,0,.3);font-family:'DM Mono',monospace;
+  transition:all .25s;z-index:10;backdrop-filter:blur(4px);
+}
+.rb-skip:hover{color:rgba(255,255,255,.5);border-color:rgba(255,255,255,.3);background:rgba(0,0,0,.5)}
+.rb-skip:active{transform:scale(.95)}
+
+/* ── SKILL TREE ── */
+.skill-tree-overlay{
+  position:fixed;inset:0;background:linear-gradient(135deg,#05030c,#08060e,#0a070f);z-index:8000;
+  display:none;flex-direction:column;overflow:hidden;
+}
+.skill-tree-overlay.active{display:flex;animation:st-fade-in .4s ease forwards}
+@keyframes st-fade-in{from{opacity:0}to{opacity:1}}
+
+.skill-tree-overlay::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse at 50% 50%, rgba(100,60,150,.08), transparent 70%);
+  pointer-events:none;z-index:1;
+}
+
+.st-header{
+  padding:24px 32px 18px;border-bottom:2px solid rgba(100,80,150,.3);display:flex;align-items:center;
+  justify-content:space-between;flex-shrink:0;background:linear-gradient(90deg,#08060e,#0a0810);
+  z-index:10;box-shadow:0 2px 20px rgba(0,0,0,.6),0 0 30px rgba(100,80,150,.1);
+  position:relative;
+}
+
+.st-header::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(150,100,200,.4),transparent);
+}
+
+.st-title-block{display:flex;flex-direction:column;gap:4px}
+.st-title{
+  font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;color:#e8d8ff;
+  letter-spacing:.1em;text-shadow:0 0 20px rgba(150,100,200,.3);
+}
+.st-subtitle{font-size:10px;letter-spacing:.25em;text-transform:uppercase;color:#6a5a8a;font-weight:500}
+
+.st-points-bar{display:flex;align-items:center;gap:20px}
+.st-points{font-size:14px;letter-spacing:.1em;color:#b8a8d8;font-family:'DM Mono',monospace;font-weight:500}
+.st-points span{font-size:20px;color:#e8d0ff;font-family:'Cinzel',serif;text-shadow:0 0 12px rgba(180,120,220,.5)}
+.st-points-label{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:#5a4a7a}
+
+.st-close{
+  font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#6a5a8a;cursor:pointer;
+  background:rgba(100,80,150,.1);border:1px solid rgba(150,100,200,.3);font-family:'DM Mono',monospace;
+  transition:all .2s;padding:8px 14px;border-radius:2px;font-weight:500;
+}
+.st-close:hover{
+  color:#c8a8f0;border-color:rgba(150,120,220,.6);background:rgba(100,80,150,.25);
+  box-shadow:0 0 12px rgba(150,100,200,.3);
+}
+.st-close:active{transform:scale(.96)}
+
+.st-canvas-wrap{
+  flex:1;overflow:hidden;position:relative;cursor:grab;background:linear-gradient(45deg,#05030c 0%,#0a070f 50%,#08060e 100%);
+}
+.st-canvas-wrap:active{cursor:grabbing}
+.st-canvas{position:absolute;will-change:transform}
+.st-svg{position:absolute;width:1200px;height:900px;pointer-events:none}
+
+/* Skill nodes — enhanced visuals */
+
+/* Skill node */
+.sn{
+  position:absolute;width:100px;height:100px;border-radius:50%;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  cursor:pointer;transition:all .3s cubic-bezier(.34,1.56,.64,1);
+  border:2.5px solid #3a2a50;background:linear-gradient(135deg,#16102a,#0e0a1c);
+  user-select:none;-webkit-user-select:none;
+  box-shadow:0 0 12px rgba(60,40,120,.2),inset 0 0 8px rgba(80,50,140,.1);
+  position:relative;
+}
+.sn::before{
+  content:'';position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 30% 30%, rgba(140,100,220,.08), transparent 60%);
+  opacity:0;transition:opacity .3s;pointer-events:none;
+}
+.sn:hover{
+  transform:scale(1.18);
+  .sn::before{opacity:1}
+}
+.sn.available{
+  border-color:#6050d0;
+  background:linear-gradient(135deg,#1a1235,#120a28);
+  box-shadow:0 0 24px rgba(96,80,208,.5),inset 0 0 12px rgba(120,100,200,.15);
+  animation:avail-pulse 2s ease-in-out infinite;
+}
+@keyframes avail-pulse{
+  0%,100%{box-shadow:0 0 24px rgba(96,80,208,.5),inset 0 0 12px rgba(120,100,200,.15)}
+  50%{box-shadow:0 0 40px rgba(140,120,240,.8),inset 0 0 16px rgba(150,120,220,.25)}
+}
+.sn.available:hover{
+  transform:scale(1.25);
+  box-shadow:0 0 48px rgba(140,120,240,1),0 0 80px rgba(100,80,200,.5),inset 0 0 20px rgba(160,130,240,.3);
+}
+.sn.available .sn-name{color:#9080d8}
+.sn.available .sn-rank{color:#7868c8}
+.sn.unlocked{
+  border-color:#7860d0;
+  background:linear-gradient(135deg,#221c40,#18122a);
+  box-shadow:0 0 28px rgba(120,96,208,.45),inset 0 0 14px rgba(140,110,220,.12);
+}
+.sn.unlocked:hover{
+  transform:scale(1.22);
+  box-shadow:0 0 44px rgba(140,120,228,.65),0 0 70px rgba(120,100,200,.3),inset 0 0 18px rgba(160,130,240,.2);
+}
+.sn.maxed{
+  border-color:#e0b8ff;
+  background:linear-gradient(135deg,#2a1f50,#20143f);
+  box-shadow:0 0 40px rgba(224,184,255,.6),0 0 80px rgba(160,120,255,.3),inset 0 0 18px rgba(220,180,255,.2);
+  animation:maxed-glow 1.8s ease-in-out infinite;
+}
+@keyframes maxed-glow{
+  0%,100%{box-shadow:0 0 40px rgba(224,184,255,.6),0 0 80px rgba(160,120,255,.3),inset 0 0 18px rgba(220,180,255,.2)}
+  50%{box-shadow:0 0 60px rgba(224,184,255,.9),0 0 120px rgba(180,140,255,.5),inset 0 0 24px rgba(230,200,255,.3)}
+}
+.sn.maxed:hover{
+  transform:scale(1.25);
+  box-shadow:0 0 80px rgba(224,184,255,1),0 0 140px rgba(180,140,255,.7),inset 0 0 28px rgba(240,210,255,.4);
+}
+.sn.locked{opacity:.25;cursor:default}
+.sn.locked:hover{transform:none}
+.sn-icon{font-size:24px;line-height:1;filter:drop-shadow(0 0 4px rgba(140,100,220,.3))}
+.sn.available .sn-icon{filter:drop-shadow(0 0 8px rgba(150,120,240,.6))}
+.sn.maxed .sn-icon{filter:drop-shadow(0 0 12px rgba(224,184,255,.8))}
+.sn-name{
+  font-size:8px;letter-spacing:.12em;text-transform:uppercase;color:#6050a0;text-align:center;
+  line-height:1.2;padding:0 6px;font-weight:500;font-family:'Cinzel',serif;
+}
+.sn.unlocked .sn-name,.sn.maxed .sn-name{color:#b8a0e8}
+.sn-rank{font-size:9px;color:#5040b0;letter-spacing:.06em;font-weight:600;font-family:'DM Mono',monospace}
+.sn.unlocked .sn-rank{color:#9080d8}
+.sn.maxed .sn-rank{color:#e0c8ff}
+
+/* SVG connector lines */
+.st-svg{position:absolute;inset:0;pointer-events:none;overflow:visible}
+.st-line{stroke:#2a1a50;stroke-width:2;fill:none;transition:all .4s;filter:drop-shadow(0 0 1px rgba(60,40,120,.4))}
+.st-line.lit{stroke:#7060c0;stroke-width:2.5;filter:drop-shadow(0 0 6px rgba(112,96,192,.7))}
+.st-line.maxed{stroke:#c8a0ff;stroke-width:3;filter:drop-shadow(0 0 8px rgba(200,160,255,.9))}
+
+/* Skill tooltip */
+.sn-tooltip{
+  position:absolute;background:linear-gradient(135deg,#16102a,#0e0a1c);border:2px solid #4a3a70;border-radius:6px;
+  padding:12px 16px;width:210px;pointer-events:none;z-index:10;
+  font-size:10px;letter-spacing:.08em;color:#9080b0;line-height:1.7;
+  transform:translate(-50%,-120%);top:0;left:50%;
+  opacity:0;transition:all .2s cubic-bezier(.34,1.56,.64,1);
+  box-shadow:0 12px 48px rgba(0,0,0,.8),0 0 32px rgba(140,100,220,.25);
+}
+.sn:hover .sn-tooltip{opacity:1;transform:translate(-50%,-125%)}
+.sn-tooltip-name{font-family:'Cormorant Garamond',serif;font-size:15px;color:#e8c8ff;margin-bottom:6px;letter-spacing:.05em;font-weight:400}
+.sn-tooltip-desc{color:#7060a0;margin-bottom:7px;font-style:italic}
+.sn-tooltip-stat{color:#b890d8;font-weight:500}
+.sn-tooltip-cost{margin-top:8px;color:#5a4a80;border-top:1px solid #2a1a50;padding-top:6px}
+
+/* ── TOAST ── */
+.toast-container{position:fixed;top:20px;right:20px;z-index:10000;display:flex;flex-direction:column;gap:7px;pointer-events:none}
+.toast{background:#1c1a17;color:#e8e4dc;border-radius:4px;padding:11px 18px;font-size:9px;letter-spacing:.14em;text-transform:uppercase;box-shadow:0 6px 28px rgba(0,0,0,.4);animation:toast-in .32s var(--ease-spring) forwards;max-width:300px;border-left:3px solid #444}
+.toast.out{animation:toast-out .28s ease forwards}
+.toast.legendary-toast{background:#150e00;border-left-color:#c8960a;color:#f0c040}
+.toast.mythic-toast   {background:#0e0014;border-left-color:#8800cc;color:#ee80ff}
+.toast.cursed-toast   {background:#0e0000;border-left-color:#660000;color:#cc3030}
+.toast.divine-toast   {background:#0e0c00;border-left-color:#ffd700;color:#ffe040}
+.toast.spectral-toast {background:#000a14;border-left-color:#00e5ff;color:#00ffff;text-shadow:0 0 8px rgba(0,229,255,.6)}
+.toast.const-toast    {background:#060412;border-left-color:#6040c0;color:#b8a8e8}
+.toast.milestone-toast{background:#0a100a;border-left-color:#4a7a4a;color:#88cc88}
+.toast.rebirth-toast  {background:#120600;border-left-color:#c84000;color:#ff8040}
+@keyframes toast-in {from{transform:translateX(110%) scale(.85);opacity:0}to{transform:translateX(0) scale(1);opacity:1}}
+@keyframes toast-out{from{transform:translateX(0) scale(1);opacity:1}to{transform:translateX(110%) scale(.85);opacity:0}}
+
+/* ── SCROLLBARS ── */
+.page::-webkit-scrollbar,.shop-grid::-webkit-scrollbar,.const-body::-webkit-scrollbar{width:3px}
+.page::-webkit-scrollbar-thumb,.shop-grid::-webkit-scrollbar-thumb,.const-body::-webkit-scrollbar-thumb{background:#d8d4ce;border-radius:2px}
+.page::-webkit-scrollbar-track,.shop-grid::-webkit-scrollbar-track,.const-body::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+
+<div class="flash-overlay" id="flashOverlay"></div>
+<div class="toast-container" id="toastContainer"></div>
+
+<header>
+  <p class="eyebrow">Random Name Generator</p>
+  <h1>Name Roller</h1>
+</header>
+
+<div class="streak-row" id="streakRow">
+  <span class="streak-label">Streak</span>
+  <div class="streak-pips" id="streakPips">
+    <div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div><div class="pip"></div>
+  </div>
+  <span class="streak-bonus" id="streakBonus" style="opacity:0"></span>
+</div>
+
+<div class="card idle-pulse" id="card">
+  <span class="new-badge" id="newBadge">New!</span>
+  <span class="rarity-badge" id="rarityBadge"></span>
+  <div class="result-name idle" id="resultName">press roll</div>
+  <div class="roll-counter" id="rollCounter"></div>
+</div>
+
+<div class="history-tray" id="historyTray"></div>
+
+<div class="btn-row">
+  <button class="btn btn-primary style-classic" id="rollBtn" onclick="handleRollClick(event)">Roll</button>
+  <button class="btn btn-secondary" onclick="openBook()">Name Book</button>
+  <button class="btn btn-secondary btn-icon" onclick="openShop()" title="Style Shop">🎨</button>
+</div>
+
+<button class="rebirth-btn" id="rebirthBtn" onclick="startRebirthCutscene()">🔥 Rebirth — Ascend Beyond</button>
+
+<div class="sub-row">
+  <button class="sub-btn" onclick="openConstellation()">✦ Constellation Map</button>
+  <button class="sub-btn sub-btn-rune" onclick="openRuneCraft()">⬡ Rune Crafting</button>
+</div>
+
+<div class="save-status" id="saveStatus"></div>
+
+<!-- BOOK -->
+<div class="overlay" id="bookOverlay" onclick="if(event.target===this)closeBook()">
+  <div class="book">
+    <div class="book-cover" id="bookCover" onclick="flipCover()">
+      <div class="bc-line"></div>
+      <div class="bc-title">Name Book</div>
+      <div class="bc-sub">Collected Names</div>
+      <div class="bc-line"></div>
+      <div class="bc-tap">Tap to open</div>
+    </div>
+    <div class="book-pages">
+      <div class="book-header">
+        <span class="book-title">Name Book</span>
+        <button class="book-close" onclick="closeBook()">Close</button>
+      </div>
+      <div class="book-rebirth-banner" id="bookRebirthBanner">
+        <div class="brb-text">You have collected over 100 names.<br><span class="brb-count" id="brbCount">0</span> names ready to ascend.</div>
+        <button class="brb-btn" onclick="closeBook();startRebirthCutscene()">🔥 Rebirth</button>
+      </div>
+      <div class="book-tabs">
+        <button class="tab-btn active" onclick="switchTab('all',this)">All</button>
+        <button class="tab-btn" onclick="switchTab('common',this)">Common</button>
+        <button class="tab-btn" onclick="switchTab('uncommon',this)">Uncommon</button>
+        <button class="tab-btn" onclick="switchTab('rare',this)">Rare</button>
+        <button class="tab-btn" onclick="switchTab('legendary',this)">Legendary</button>
+        <button class="tab-btn" onclick="switchTab('mythic',this)">✦ Mythic</button>
+        <button class="tab-btn" onclick="switchTab('cursed',this)">☠ Cursed</button>
+        <button class="tab-btn" onclick="switchTab('divine',this)">✧ Divine</button>
+        <button class="tab-btn" onclick="switchTab('spectral',this)">◈ Spectral</button>
+      </div>
+      <div class="page-wrap"><div class="page visible" id="pageContent"></div></div>
+      <div class="book-footer">
+        <span class="book-count" id="bookCount"></span>
+        <div class="page-nav">
+          <button id="prevBtn" onclick="prevPage()" disabled>&#8592;</button>
+          <button id="nextBtn" onclick="nextPage()">&#8594;</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- STYLE SHOP — driven by button-styles.js -->
+<div class="overlay" id="shopOverlay" onclick="if(event.target===this)closeShop()"></div>
+
+<!-- button-styles.js: defines all styles, injects CSS, owns the shop -->
+<script src="button-styles.js"></script>
+
+<!-- CONSTELLATION -->
+<div class="overlay" id="constOverlay" onclick="if(event.target===this)closeConstellation()">
+  <div class="constellation-panel" onclick="event.stopPropagation()">
+    <!-- Live star field canvas -->
+    <div class="const-starfield"><canvas id="constStarCanvas"></canvas></div>
+    <!-- Header -->
+    <div class="const-header">
+      <div class="const-header-left">
+        <div class="const-title">✦ Constellation Map</div>
+        <div class="const-sub">Collect all stars to unlock a title</div>
+        <div class="const-stats-strip" id="constStatsStrip">
+          <div class="const-stat">
+            <div class="const-stat-val" id="constStatComplete">0</div>
+            <div class="const-stat-label">Complete</div>
+          </div>
+          <div class="const-stat">
+            <div class="const-stat-val" id="constStatStars">0</div>
+            <div class="const-stat-label">Stars Found</div>
+          </div>
+          <div class="const-stat">
+            <div class="const-stat-val" id="constStatTotal">0</div>
+            <div class="const-stat-label">Total Stars</div>
+          </div>
+        </div>
+      </div>
+      <button class="const-close" onclick="closeConstellation()">Close ✕</button>
+    </div>
+    <!-- Filter bar -->
+    <div class="const-filter-bar">
+      <input class="const-search" id="constSearch" placeholder="Search constellations or stars…" oninput="renderConstellation()" />
+      <button class="const-filter-btn active" data-filter="all" onclick="setConstFilter('all',this)">All</button>
+      <button class="const-filter-btn" data-filter="complete" onclick="setConstFilter('complete',this)">✦ Complete</button>
+      <button class="const-filter-btn" data-filter="inprogress" onclick="setConstFilter('inprogress',this)">In Progress</button>
+      <button class="const-filter-btn" data-filter="locked" onclick="setConstFilter('locked',this)">Undiscovered</button>
+    </div>
+    <div class="const-body" id="constBody"></div>
+    <div class="const-footer">
+      <div class="const-total-bar">
+        <span id="constProgress">0 / 0 complete</span>
+        <div class="const-total-fill-wrap"><div class="const-total-fill" id="constTotalFill" style="width:0%"></div></div>
+      </div>
+      <span id="constTitles" class="const-complete-badge"></span>
+    </div>
+  </div>
+</div>
+
+
+<!-- RUNE CRAFTING -->
+<div id="runeOverlay" onclick="if(event.target===this)closeRuneCraft()">
+  <div class="rune-panel" onclick="event.stopPropagation()">
+    <div class="rune-bg-glow"></div>
+    <div class="rune-header">
+      <div>
+        <div class="rune-title">⬡ Rune Crafting</div>
+        <div class="rune-sub">Combine names to forge rings of power</div>
+      </div>
+      <button class="rune-close" onclick="closeRuneCraft()">Close ✕</button>
+    </div>
+    <div class="rune-body">
+      <!-- Left: forge -->
+      <div class="rune-forge">
+        <div class="rune-section-title">Choose Names to Combine</div>
+        <div class="rune-slots" id="runeSlots">
+          <div class="rune-slot" id="runeSlot0" onclick="runeSlotClick(0)">
+            <span class="rune-slot-glyph">᛫</span>
+            <span class="rune-slot-label">Slot 1</span>
+          </div>
+          <div class="rune-slot" id="runeSlot1" onclick="runeSlotClick(1)">
+            <span class="rune-slot-glyph">᛬</span>
+            <span class="rune-slot-label">Slot 2</span>
+          </div>
+          <div class="rune-slot" id="runeSlot2" onclick="runeSlotClick(2)">
+            <span class="rune-slot-glyph">ᚹ</span>
+            <span class="rune-slot-label">Slot 3 (optional)</span>
+          </div>
+        </div>
+        <div id="runeForgePreview" style="margin-bottom:16px;min-height:36px"></div>
+        <button class="rune-forge-btn" id="runeForgeBtn" onclick="doRuneForge()" disabled>
+          ⬡ Forge Ring
+        </button>
+        <div class="rune-section-title" style="margin-top:4px">Your Collected Names</div>
+        <input class="rune-picker-search" id="runePickerSearch" placeholder="Search names…" oninput="renderRunePicker()">
+        <div class="rune-name-grid" id="runeNameGrid"></div>
+      </div>
+      <!-- Right: equipped rings -->
+      <div class="rune-rings-panel">
+        <div class="rune-section-title">Equipped Rings</div>
+        <div class="rune-equipped-list" id="runeEquippedList"></div>
+        <div class="rune-section-title" style="margin-top:12px">Ring Vault</div>
+        <div id="runeVaultList" style="display:flex;flex-direction:column;gap:6px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FORGE ANIMATION -->
+<div id="runeForgeAnim"></div>
+
+<!-- REBIRTH CUTSCENE -->
+<div id="rebirthCutscene">
+  <div class="rb-fire-bg" id="rbFireBg"></div>
+  <div class="rb-name-pile" id="rbNamePile"></div>
+  <div class="rb-title" id="rbTitle">Reborn</div>
+  <div class="rb-subtitle" id="rbSubtitle">Your names return to the void</div>
+  <button class="rb-skip" onclick="skipRebirth()">Skip ›</button>
+</div>
+
+<!-- SKILL TREE -->
+<div class="skill-tree-overlay" id="skillTreeOverlay">
+  <div class="st-header">
+    <div class="st-title-block">
+      <div class="st-title">Ascension Tree</div>
+      <div class="st-subtitle" id="stSubtitle">Rebirth 0 — 0 skill points</div>
+    </div>
+    <div class="st-points-bar">
+      <div>
+        <div class="st-points">Points: <span id="stPoints">0</span></div>
+        <div class="st-points-label">available to spend</div>
+      </div>
+      <button class="st-close" onclick="closeSkillTree()">Close ✕</button>
+    </div>
+  </div>
+  <div class="st-canvas-wrap" id="stCanvasWrap">
+    <div class="st-canvas" id="stCanvas">
+      <svg class="st-svg" id="stSvg"></svg>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+const cfg={apiKey:"AIzaSyB98E7T3E3IY4fa6_KLOcoT__CiOcUn3LE",authDomain:"pulse-f5e93.firebaseapp.com",projectId:"pulse-f5e93",storageBucket:"pulse-f5e93.firebasestorage.app",messagingSenderId:"26109296510",appId:"1:26109296510:web:51ee51db5970e544b13d2f",measurementId:"G-JMDX0D9D69"};
+const app=initializeApp(cfg);
+const db=getFirestore(app);
+window._db=db;window._dbDoc=doc;window._dbGetDoc=getDoc;window._dbSetDoc=setDoc;window._dbReady=true;
+async function load(){
+  try{
+    const s=await getDoc(doc(db,"saves","player1"));
+    if(s.exists()){
+      const d=s.data();
+      if(d.collected) window.collected=d.collected;
+      if(d.totalRolls!=null) window.totalRolls=d.totalRolls;
+      if(d.activeStyle) window.activeStyle=d.activeStyle;
+      if(d.rollHistory) window.rollHistory=d.rollHistory;
+      if(d.rebirthCount!=null) window.rebirthCount=d.rebirthCount;
+      if(d.totalSkillPoints!=null) window.totalSkillPoints=d.totalSkillPoints;
+      if(d.spentSkillPoints!=null) window.spentSkillPoints=d.spentSkillPoints;
+      if(d.unlockedSkills) window.unlockedSkills=d.unlockedSkills;
+      if(d.equippedRings) window.equippedRings=d.equippedRings;
+      if(d.ringVault) window.ringVault=d.ringVault;
+      updateRollCounter();
+      if(typeof updateButtonStyle==='function') updateButtonStyle();
+      renderPage();rebuildHistory();updateRebirthButton();
+      if(typeof applyRingEffects==='function'){applyRingEffects();updateCardOrbits();}
+      setStatus('saved','Collection loaded');setTimeout(()=>setStatus('',''),2000);
+    }
+  }catch(e){console.log(e)}
+}
+window._loadSave=load;load();
+</script>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+// DATA — NAMES
+// ═══════════════════════════════════════════════════════════
+const NAMES = {
+  common:[
+    "James","John","Robert","Michael","William","David","Richard","Joseph","Thomas","Charles",
+    "Mary","Patricia","Jennifer","Linda","Barbara","Susan","Jessica","Sarah","Karen","Lisa",
+    "Daniel","Matthew","Anthony","Donald","Mark","Paul","Steven","Andrew","Kenneth","Joshua",
+    "Kevin","Brian","George","Timothy","Ronald","Edward","Jason","Jeffrey","Ryan","Jacob",
+    "Gary","Nicholas","Eric","Jonathan","Stephen","Larry","Justin","Scott","Brandon","Benjamin",
+    "Emma","Olivia","Ava","Isabella","Sophia","Mia","Charlotte","Amelia","Harper","Evelyn",
+    "Abigail","Emily","Elizabeth","Sofia","Ella","Madison","Scarlett","Victoria","Aria","Grace",
+    "Chloe","Camila","Penelope","Riley","Layla","Lillian","Nora","Zoey","Hannah","Lucas",
+    "Ethan","Aiden","Owen","Caleb","Nathan","Isaac","Miles","Leo","Liam","Noah",
+    "Mason","Logan","Oliver","Elijah","Levi","Zoe","Lily","Aurora","Willow","Luna",
+    "Hazel","Stella","Violet","Daisy","Ruby","Iris","Ivy","Alice","Clara","Eleanor",
+    "Agnes","Peter","Simon","Patrick","Francis","Anne","Catherine","Margaret","Helen","Dorothy",
+    "Ruth","Martha","Joan","Frances","Jean","Betty","Carol","Sandra","Donna","Shirley",
+    "Ralph","Walter","Harold","Raymond","Frank","Arthur","Earl","Fred","Ernest","Mabel",
+    "Edith","Ethel","Mildred","Florence","Gladys","Edna","Vera","Bertha","Hilda","Myrtle",
+    "Connor","Dylan","Evan","Adrian","Cole","Brady","Garrett","Luca","Jaxon","Beau",
+    "Aubrey","Addison","Hailey","Allison","Savannah","Avery","Anna","Audrey","Skylar","Paisley",
+    "Tristan","Braden","Hayden","Grant","Hunter","Spencer","Preston","Colton","Weston","Reid",
+    "Felix","Jasmine","Greta","Colin","Douglas","Fiona","Gavin","Heather","Ian","Janet",
+    "Keith","Kyle","Lance","Marcus","Nathan","Oscar","Patrick","Quincy","Raymond","Samuel",
+    "Theodore","Ulysses","Victor","Walter","Xavier","Yancy","Zachary","Adam","Bennett","Charles",
+    "Derek","Eugene","Gregory","Harold","Irving","Jerome","Kenneth","Leopold","Marcus","Nathan",
+    "Oliver","Patrick","Quentin","Robert","Samuel","Theodore","Urban","Victor","Wallace","Xavier",
+    "Yvonne","Zoey","Abigail","Briana","Catherine","Deborah","Eleanor","Felicity","Georgia","Helena",
+    "Ivy","Jacqueline","Keisha","Leah","Monica","Nora","Olivia","Phyllis","Quinn","Rebecca",
+    "Sophia","Theresa","Ursula","Vanessa","Wendy","Ximena","Yasmine","Zara","Avery","Brooke",
+    // 20 new common
+    "Archer","Blake","Casey","Drew","Emery","Finley","Greer","Haven","Indigo","Jordan",
+    "Kendall","Lane","Morgan","Noel","Owen","Parker","Quinn","Reese","Sage","Taylor",
+    // +40 more common
+    "Aiden","Brynn","Calvin","Delia","Ellis","Fleur","Gwen","Hayes","Iris","Jules",
+    "Knox","Lydia","Mercer","Nina","Orla","Piper","Rafael","Selene","Theo","Uma",
+    "Vance","Wren","Xander","Yara","Zane","Alec","Beau","Cora","Dean","Eden",
+    "Ford","Gale","Hart","Isla","Jude","Kit","Lena","Max","Nova","Olive",
+    "Penn","Quinn","Remy","Sloane","Tess","Uri","Vera","Wade","Xyla","Yael"
+  ],
+  uncommon:[
+    "Theodore","Sebastian","Dominic","Maxwell","Harrison","Nathaniel","Elliot","Jasper","Atticus","Emmett",
+    "Silas","Declan","Rowan","Finnegan","Callum","Sullivan","Beckett","Fletcher","Holden","Desmond",
+    "Margot","Vivienne","Genevieve","Cordelia","Rosalind","Beatrice","Cecelia","Adelaide","Isadora","Josephine",
+    "Evangeline","Arabella","Seraphina","Clementine","Wilhelmina","Octavia","Leonora","Celestine","Imogen","Elspeth",
+    "Aldric","Bramwell","Crispin","Edmund","Florian","Gideon","Hadrian","Ignatius","Jethro","Lysander",
+    "Merrick","Oberon","Phineas","Quentin","Raleigh","Thaddeus","Upton","Vaughn","Warwick","Xander",
+    "Yorick","Zebediah","Alaric","Bastian","Caius","Evander","Fenwick","Gilmore","Hawkins","Isambard",
+    "Jonquil","Kentworth","Lavinia","Montague","Neville","Orland","Quintus","Reginald","Sylvester","Tarrant",
+    "Ulrick","Wulfric","Alistair","Beaumont","Cormac","Dashiell","Eustace","Griffith","Humphrey","Ingram",
+    "Jarvis","Kendrick","Leopold","Mortimer","Norbert","Oswald","Pemberton","Radcliffe","Sterling","Tobias",
+    "Ulysses","Vespian","Westley","Xanthos","Yolanda","Zelda","Araminta","Belinda","Camellia","Daphne",
+    "Eugenia","Fenella","Griselda","Horatio","Imelda","Jocelyn","Kerensa","Leontine","Magdalene","Narcissa",
+    "Orinthia","Petronilla","Quintilla","Rosalba","Sophronia","Thalassa","Urania","Venetia","Winifred","Xanthe",
+    "Zenaide","Aldous","Barnabas","Cornelius","Demetrius","Endymion","Festus","Godwin","Hercules","Ignacio",
+    "Jacobus","Killian","Leander","Manfred","Newell","Oleander","Ptolemy","Ranulph","Septimus","Theron",
+    "Ambrose","Broderick","Casimir","Devlin","Erwin","Finnbar","Godfrey","Hendrick","Ives","Jebediah",
+    "Kestrel","Lowell","Marcheline","Norwood","Orton","Peregrine","Quillan","Ruthven","Salome","Torquil",
+    "Auberon","Balthazar","Callisto","Dashiell","Emerson","Fitzroy","Grayson","Hawthorne","Idris","Jericho",
+    "Kieran","Lysander","Matthias","Nathaniel","Orson","Preston","Quinton","Reeves","Sterling","Theron",
+    "Ulrich","Valentine","Wendell","Xenos","Yates","Zephyr","Alasdair","Bennington","Cornelius","Dashwood",
+    // 20 new uncommon
+    "Thaddeus","Malachite","Periwinkle","Gulliver","Bramblewood","Crestmere","Devereaux",
+    "Elowyn","Foxglove","Harbinger","Isolden","Jasperveil","Kestrelwood","Lochmore",
+    "Miravel","Nocturn","Orvyn","Pendragon","Quarell","Ravenswood",
+    // +20 more uncommon
+    "Aldhelm","Brentwood","Cascavel","Dawnmere","Elarindra","Fernwood","Greymantle",
+    "Halcourt","Ivywood","Jorveld","Kelvindra","Lyonheart","Morningvale","Nettlewood",
+    "Oryndra","Penvale","Quillindra","Rosindra","Silvercroft","Thistledown"
+  ],
+  rare:[
+    "Aurelius","Balthazar","Caelum","Elowen","Fionn","Hawthorne","Isidore","Jareth","Keiran","Mordecai",
+    "Niall","Orion","Quillan","Remington","Stellan","Tarquin","Ulric","Vesper","Willoughby","Xiomara",
+    "Ysolde","Zephyrine","Breccan","Caelan","Devereux","Faustine","Hesper","Iolanthe","Jocasta","Keturah",
+    "Lysandra","Marisol","Nerissa","Ophelia","Quintessa","Rowena","Saoirse","Thessaly","Undine","Valentijn",
+    "Wisteria","Xanthippe","Zenobia","Amaranta","Bellatrix","Calixta","Delphine","Eudora","Fiametta","Galadriel",
+    "Hieronymus","Isolde","Kazimir","Liriel","Mireille","Odessa","Persephone","Rosamund","Silvanus","Ursula",
+    "Wraithborne","Xylander","Ysadora","Aelindra","Braxton","Cailleach","Elindra","Favian","Halvard","Iphigenia",
+    "Jovian","Kallistrate","Lachlan","Mairead","Nightshade","Oberyn","Peregrine","Raelindra","Tadhg","Ulrike",
+    "Valeriana","Winterbourne","Zarathos","Astraea","Branwen","Caelindra","Drusilla","Elarion","Faedryn","Hadassah",
+    "Indira","Jezabel","Kirathe","Lunaire","Morvenna","Nalindra","Onyxia","Parisienne","Queridwen","Ravindra",
+    "Shadowmere","Undrave","Vashti","Winterhawk","Xanthira","Zeraphine","Ambrosine","Beauregard","Celestia","Donatella",
+    "Gwenllian","Hieronima","Junipera","Kaedrith","Larindra","Morrigan","Nyxindra","Odalinde","Praxiteles","Quirindra",
+    "Saorindra","Talindra","Ulindra","Varindra","Windmere","Yalindra","Zaelindra","Aethindra","Blasindra","Craevindra",
+    "Duskweave","Evenfall","Frostweave","Grailborne","Halvindra","Ironwilde","Jadespire","Kelindra","Laveindra","Mirindra",
+    "Nightfall","Obsidian","Prismara","Quickthorn","Riven","Stormcaller","Thornwood","Umbriel","Vexan","Wychwood",
+    "Xaelan","Ylindra","Zephyra","Ashcroft","Brindlewood","Cloudpiercer","Darkmere","Ebonfall","Frostmere","Graymist",
+    "Avelind","Brinholm","Celestis","Dorenai","Etherial","Faelindor","Glimmora","Halcyon","Ilminster","Jadewar",
+    "Kaelith","Luminor","Miravelle","Noctara","Ophelion","Petravox","Quasar","Ravenvale","Sylvaine","Theodane",
+    "Unravel","Vaelindor","Wraithveil","Xandros","Yarethel","Zeitros","Aelindor","Bolthalor","Celestria","Dravior",
+    // 20 new rare
+    "Erevorn","Faelorin","Greyspire","Halindra","Irisveil","Jarethion","Kaelindra","Lunarvex",
+    "Mordreveil","Nighthollow","Obsinara","Peregrineveil","Quelindra","Ravenmere","Starlindra",
+    "Thornreveil","Umbravex","Vexindra","Wildmere","Xelindra",
+    // +20 more rare
+    "Aethindra","Bronzeveil","Crystalmere","Duskvorn","Emberglass","Flintwood","Goldmere",
+    "Highveil","Ironvale","Jadehallow","Keldravorn","Lunaspire","Misthollow","Nightvale",
+    "Obsidivale","Pearlmere","Quartzborn","Roseveil","Stormmere","Twilindra"
+  ],
+  legendary:[
+    "Achilles","Brennius","Cassivellaunus","Etherion","Forsvar","Galahad","Havelock","Iamblichus","Jadwiga","Kerridwen",
+    "Laoghaire","Maelgwn","Niamh","Ossian","Pryderi","Quilaztli","Ragnvald","Sigrdriva","Taranis","Ulfryn",
+    "Vercingetorix","Wynflaed","Xochiquetzal","Ymoja","Zosime","Aethelflaed","Brandubh","Conchobar","Draupnir","Eorlmund",
+    "Fionnuala","Gwydion","Iarfhlaith","Kullervo","Medraut","Nothhelm","Oisín","Prasutagus","Rhiannon","Sigeberht",
+    "Tigernach","Vasilikos","Wyrdfell","Xolotl","Ynyr","Zarathael","Aeducanthe","Britomart","Caratacus","Deirdre",
+    "Ethelberht","Fáelán","Grainne","Hrodulf","Iseult","Jarlath","Kentigern","Llywelyn","Méabh","Nuadha",
+    "Odhrán","Pádraigín","Ruadhán","Scáthach","Tighearnach","Uallach","Vésteinn","Wulfhere","Xochitl","Yggdrasil",
+    "Zacharundas","Ambrosius","Boudicca","Cunobelin","Dubhthach","Étaín","Feradach","Goídel","Haakon","Ingimundur",
+    "Kolgríma","Landvættr","Magnusson","Nerthus","Óðinn","Pelagianos","Queztlcoatl","Rognvaldr","Suibhne","Thorvaldsen",
+    "Urðarbrunnr","Vǫluspá","Wulfnoth","Xerxandrel","Yngvarr","Zealothael","Annwfyn","Brocéliande","Cuchulain","Daghdha",
+    "Epimetheus","Fomorian","Gilgamesh","Herculion","Inanna","Jörmungandr","Kurgan","Labyrintheon","Marduk","Niflheimr",
+    "Orpheus","Persia","Quetzal","Ragnarök","Surtr","Thyatira","Utgard","Vanaheim","Wodenaz","Xibalba",
+    "Aelithren","Beowulf","Caldris","Dartheron","Eldorien","Faelion","Grendamir","Halcyon","Ironheart","Jaxarion",
+    "Kaelindor","Lionarch","Mytharis","Norduen","Orinauth","Palomis","Questrian","Ravindor","Stalwart","Thorgrim",
+    "Untheron","Valdrin","Warbrand","Xanthor","Yeomarch","Zestral","Aldrun","Braethel","Celandor","Drekhor",
+    // 20 new legendary
+    "Erevan","Faelivorn","Golthrax","Haelindor","Isandrel","Jormundark","Kaelthorn","Lirethion",
+    "Mordanthel","Nightbringer","Osirindra","Primalvorn","Questhorin","Ravenmourne","Solindra",
+    "Thornhelm","Ulvindra","Valorindra","Wulfcrest","Xalthorin",
+    // +10 more legendary
+    "Yaremthor","Zarathindra","Aesirborn","Brunhildris","Corvindra","Dreadhelm","Elderborn",
+    "Frostmourne","Grimvald","Heirborne"
+  ],
+  mythic:[
+    "Aion","Brahmastra","Chronoveil","Dawnweaver","Ethernus","Fatewarden","Grimoire","Hyperaxis",
+    "Infinara","Jormungand","Kosmoveil","Lumendrift","Maelstromis","Nexarion","Omegathread","Phantasmal",
+    "Quilovein","Realmshard","Soularion","Timebreaker","Umbraveil","Voidweaver","Worldender","Xenomancer",
+    "Yggdrasalis","Zeroveil","Aethermind","Boundless","Cosmosfire","Dreamblade","Eternus","Fateweave",
+    "Godthread","Horizonfall","Infinitum","Judgemend","Kingdomfall","Lastlight","Moonfracture","Nightwarden",
+    "Omniveil","Primeordial","Questwarden","Realmseed","Soulfire","Truthweave","Ultraveil","Voidmind",
+    "Worldsoul","Xenolith","Yrthemis","Zerospace","Abyssthread","Beyonding","Cosmoveil","Dimensia",
+    "Eternalfall","Fluxwarden","Galaxend","Horizonveil","Infiniteveil","Judgement","Kindleverse","Lastborn",
+    // 10 new mythic
+    "Multiversa","Nullwarden","Omnivore","Paradoxia","Quantumveil","Realmbinder","Soulcosmos",
+    "Timevoid","Universoul","Voidthrone",
+    // +10 more mythic
+    "Worldmind","Xenothread","Yearnshard","Zeroveil","Abysscore","Beyondveil","Cosmosoul",
+    "Dreamvoid","Eternaweave","Fluxsoul"
+  ],
+  cursed:[
+    "Malachar","Vexathorn","Grimdark","Sorrowveil","Doomweave","Hexenbane","Plaguewick","Wrathbourne",
+    "Netherscar","Oblithrax","Rottmourne","Scarrowend","Tormentis","Unhallow","Venomblight","Wretchworn",
+    "Xanathos","Yearndarke","Zymuroth","Abysswalker","Blight","Curseweave","Dreadmourne","Evildawn",
+    "Fleshbane","Goreblight","Harrowing","Infernalis","Jadewither","Killjoy","Lamentus","Miseryborne",
+    "Nightblight","Oathbreaker","Painweave","Quisitor","Ruinmark","Soulrend","Thornveil","Undying",
+    "Vileweave","Woeborn","Xenodread","Yowling","Zerolight","Ashenblight","Bloodweave","Crimsonveil",
+    "Deathrattle","Embervoid","Flaymark","Graveweave","Hellscorn","Ichorbleed","Jaderot","Knellborn",
+    "Lichscream","Maggotfang","Necroweave","Oblivion","Putrescent","Quagmired","Rottenmaw","Scourgeborn",
+    "Shatterbone","Thornthorn","Uksorrow","Veilbreak","Woundweave","Xenodeath","Yowldark","Zerothane",
+    // 10 new cursed
+    "Abyssborn","Blightmaw","Corpseveil","Dreadflesh","Evilweave","Flayborn","Graveborn","Hellveil",
+    "Ichorweave","Jadecurse",
+    // +10 more cursed
+    "Knellweave","Lichworn","Mouldveil","Necrovex","Oblithorn","Plagueborn","Quagmireborn","Rottenveil",
+    "Screambane","Tombweave"
+  ],
+  divine:[
+    "Auranthos","Blessward","Celestius","Dawnhallow","Etherlight","Faithwarden","Gloriana","Holythread",
+    "Illumina","Justiveil","Kindleblessed","Luminos","Miraculum","Novastorm","Omenlight","Pureheart",
+    "Quoralis","Radiance","Sanctiveil","Theolux","Ultralight","Vestalis","Wordkeeper","Xenolight",
+    "Yearnsong","Zephyrblessed","Angelicore","Benedictus","Celestiveil","Dawnborn","Eternalight","Faithborn",
+    "Gloryveil","Holyborn","Illuminaveil","Justiciara","Kindlelux","Luminara","Miracleveil","Nobilis",
+    "Omnilight","Puritveil","Quoralux","Radianceveil","Sacredborn","Theolum","Ultravestal","Vestibless",
+    "Wordveil","Xenobless","Yearnlight","Zephyrlight","Arcantos","Blessed","Celestar","Divinara",
+    "Eternabless","Faithlux","Gloralux","Holylight","Illuminus","Justblessed","Kindleveil","Luminous",
+    // 10 new divine
+    "Seraphael","Hallowed","Crownlight","Pristinus","Empyreon","Hallowing","Solarathos","Radianthiel",
+    "Celestivorn","Purebound",
+    // +10 more divine
+    "Auraveil","Blessedorn","Celesthorn","Dawnveil","Eternalux","Faithspire","Gloryvorn","Holyspire",
+    "Illuminveil","Justivorn"
+  ],
+  spectral:[
+    "Prismalix","Voidchroma","Spectraveil","Chromasoul","Prismborn","Aetherspex","Lumenvoid","Spectrix",
+    "Chromoveil","Prismantis","Voidprism","Spectraborn","Chromaweave","Prismelion","Aethervoid","Lumenchroma",
+    "Spectralis","Prismveil","Chromaseer","Voidspectra","Aetherprism","Lumensoul","Spectravorn","Chromanex",
+    "Prismhex","Voidlumen","Spectrachrome","Aetherchroma","Lumispectra","Prismweave","Voidchrome","Spectroveil",
+    "Chromalux","Prismathos","Aethernex","Lumenveil","Spectraforge","Chromarift","Prismrift","Voidmatter",
+    "Aethersoul","Lumenrift","Spectrashard","Chromaborn","Prismshard","Voidspectre","Aetherborn","Lumenshard",
+    "Spectravex","Chromaveil","Prismvex","Voidaura","Aethervex","Lumenvex","Spectranova","Chromanova",
+    "Prismanova","Voidnova","Aethernova","Lumennova","Spectravale","Chromavale","Prismvale","Voidvale",
+    "Aethervale","Lumenvale","Spectramere","Chromamere","Prismmere","Voidmere","Aethermere","Lumenmere",
+    // +20 more spectral
+    "Nexusprism","Orbitalux","Prismgate","Quantachrome","Refractveil","Spectragate","Tachyprism",
+    "Ultrachrome","Vortexprism","Waveveil","Xenochrome","Yottaprism","Zetachrome","Archveil",
+    "Binaryprism","Cipherchrome","Dataprism","Encodeveil","Fragmentprism","Gridchrome"
+  ]
+};
+
+const RARITY_CONFIG = {
+  common:    {label:"Common",    color:"#888",    textColor:"#555",    bg:"#efefef"},
+  uncommon:  {label:"Uncommon",  color:"#4a7a4a", textColor:"#3a6a3a", bg:"#dceadc"},
+  rare:      {label:"Rare",      color:"#2a4a8a", textColor:"#1a3a7a", bg:"#d4e0f0"},
+  legendary: {label:"Legendary", color:"#9a6010", textColor:"#7a4a00", bg:"#f0e4cc"},
+  mythic:    {label:"✦ Mythic",  color:"#8800cc", textColor:"#6600aa", bg:"#ecdcf8"},
+  cursed:    {label:"☠ Cursed",  color:"#880000", textColor:"#660000", bg:"#f0d4d4"},
+  divine:    {label:"✧ Divine",  color:"#b8860b", textColor:"#8b6914", bg:"#fffde0"},
+  spectral:  {label:"◈ Spectral",color:"#00aacc", textColor:"#0088aa", bg:"#e0f8ff"}
+};
+
+const CONSTELLATIONS = [
+  {id:"orion",    name:"Orion",       title:"The Hunter",         rarity:"common",   lore:"Where great names were first spoken, the stars remember.",
+   names:["James","John","Robert","Michael","William","David","Richard","Joseph","Thomas","Charles"]},
+  {id:"pleiades", name:"Pleiades",    title:"The Seven Sisters",  rarity:"common",   lore:"Seven lights, seven truths, seven names that echo forever.",
+   names:["Mary","Patricia","Jennifer","Linda","Barbara","Susan","Jessica","Sarah","Karen","Lisa"]},
+  {id:"cassio",   name:"Cassiopeia",  title:"The Queen",          rarity:"common",   lore:"A throne built of whispered names, burning bright in the northern sky.",
+   names:["Emma","Olivia","Ava","Isabella","Sophia","Mia","Charlotte","Amelia","Harper","Evelyn"]},
+  {id:"ursa",     name:"Ursa Major",  title:"The Wanderer",       rarity:"uncommon", lore:"The great bear wanders endlessly, collecting names like footprints in the frost.",
+   names:["Theodore","Sebastian","Dominic","Maxwell","Harrison","Nathaniel","Elliot","Jasper","Atticus","Emmett"]},
+  {id:"lyra",     name:"Lyra",        title:"The Songweaver",     rarity:"uncommon", lore:"Each name is a note; together they form the oldest song.",
+   names:["Margot","Vivienne","Genevieve","Cordelia","Rosalind","Beatrice","Cecelia","Adelaide","Isadora","Josephine"]},
+  {id:"draco",    name:"Draco",       title:"The Dragonbound",    rarity:"rare",     lore:"The dragon coils around the pole star, guarding names that must never be lost.",
+   names:["Aurelius","Balthazar","Caelum","Fionn","Hawthorne","Isidore","Jareth","Mordecai","Orion","Quillan"]},
+  {id:"phoenix",  name:"Phoenix",     title:"The Reborn",         rarity:"rare",     lore:"From the ash of forgotten names, new ones are born of fire.",
+   names:["Lysandra","Nerissa","Ophelia","Quintessa","Rowena","Saoirse","Thessaly","Vesper","Wisteria","Zenobia"]},
+  {id:"cygnus",   name:"Cygnus",      title:"The Celestial",      rarity:"legendary",lore:"The swan glides between worlds, carrying names on wings of starlight.",
+   names:["Achilles","Galahad","Niamh","Ossian","Rhiannon","Sigrdriva","Taranis","Wynflaed","Pryderi","Oisín"]},
+  {id:"void_c",   name:"The Void",    title:"Voidwalker",         rarity:"mythic",   lore:"In the space between stars, names exist that no tongue can speak twice.",
+   names:["Aion","Chronoveil","Ethernus","Infinara","Nexarion","Omegathread","Voidweaver","Worldender","Zeroveil","Timebreaker"]},
+  {id:"abyss_c",  name:"The Abyss",   title:"Cursed One",         rarity:"cursed",   lore:"These names were carved in bone by hands that no longer exist.",
+   names:["Malachar","Vexathorn","Grimdark","Sorrowveil","Doomweave","Hexenbane","Plaguewick","Wrathbourne","Netherscar","Oblithrax"]},
+  {id:"divine_c", name:"Empyrean",    title:"Blessed of Light",   rarity:"divine",   lore:"The highest heaven remembers these names in pillars of gold.",
+   names:["Auranthos","Blessward","Celestius","Dawnhallow","Etherlight","Faithwarden","Gloriana","Holythread","Illumina","Justiveil"]},
+  {id:"spectral_c",name:"Spectrum",   title:"Prismatic Soul",     rarity:"spectral", lore:"Names that refract through every dimension simultaneously, never settling on one truth.",
+   names:["Prismalix","Voidchroma","Spectraveil","Chromasoul","Prismborn","Aetherspex","Lumenvoid","Spectrix","Chromoveil","Prismantis"]},
+  {id:"winter",   name:"Winter's Gate",title:"Frostkeeper",       rarity:"rare",     lore:"Where the cold names live, the stars burn blue and silent.",
+   names:["Elowen","Vesper","Hesper","Undine","Wisteria","Isolde","Branwen","Caelindra","Frostweave","Halcyon"]},
+  {id:"ironveil", name:"Ironveil",    title:"The Unbroken",       rarity:"legendary",lore:"Forged in the core of dying stars, these names cannot be unmade.",
+   names:["Kaelthorn","Thornhelm","Warbrand","Ironwilde","Stalwart","Beowulf","Galahad","Havelock","Ragnvald","Aldrun"]},
+  {id:"corona_c", name:"Corona Borealis",title:"The Crowned Flame",rarity:"divine",  lore:"A crown of light worn only by names that survived the great burning.",
+   names:["Radiance","Luminara","Sacredborn","Gloriana","Dawnhallow","Etherlux","Aurelius","Celestar","Faithwarden","Illumina"]},
+  {id:"serpens_c",name:"Serpens",     title:"The Venom Tongue",   rarity:"cursed",   lore:"The serpent coils through dark matter, marking names it claims as kin.",
+   names:["Vexathorn","Doomweave","Hexenbane","Oblithrax","Necroweave","Bloodweave","Vileweave","Oathbreaker","Ruinmark","Tormentis"]},
+  {id:"nebula_c", name:"Nebula",      title:"The Dreamshaper",    rarity:"mythic",   lore:"Not a place but a becoming — these names were born when stars first exhaled.",
+   names:["Aethermind","Cosmosfire","Dreamblade","Eternus","Fateweave","Godthread","Horizonfall","Infinitum","Soularion","Voidweaver"]},
+  {id:"andromeda_c",name:"Andromeda", title:"The Unchained",      rarity:"legendary",lore:"Freed from the rock of fate, these names chose their own destinies.",
+   names:["Valindra","Erevan","Golthrax","Haelindor","Isandrel","Kaelthorn","Lirethion","Mordanthel","Solindra","Valorindra"]},
+  {id:"bootes",   name:"Boötes",      title:"The Shepherd",       rarity:"uncommon", lore:"The herdsman counts the stars each night, naming each one to remember it.",
+   names:["Rowan","Callum","Declan","Finnegan","Beckett","Holden","Sullivan","Fletcher","Silas","Desmond"]}
+];
+
+// BUTTON_STYLES loaded from button-styles.js
+
+const MILESTONES = [1,10,25,50,100,250,500];
+
+// ═══════════════════════════════════════════════════════════
+// SKILL TREE DATA
+// ═══════════════════════════════════════════════════════════
+const SKILL_NODES = [
+  // ROOT
+  { id:"root",       icon:"✦",  name:"Ascendant",       desc:"The root of all power. You have been reborn.",
+    x:700, y:60,   maxRank:1, cost:0, requires:[],
+    effect:"Unlocks the Ascension Tree" },
+
+  // ── TIER 1 (4 branches) ──────────────────────────────────
+  { id:"lucky",      icon:"🍀", name:"Fortune's Hand",   desc:"Fate favors the bold who dare to ask.",
+    x:280, y:200,  maxRank:5, cost:1, requires:["root"],
+    effect:"+2% legendary chance per rank; chance stacks" },
+  { id:"collector",  icon:"📖", name:"Archivist",        desc:"Names flow to you like rivers to the sea.",
+    x:560, y:200,  maxRank:5, cost:1, requires:["root"],
+    effect:"Permanently +5 rare+ rarity points per rank" },
+  { id:"pity",       icon:"⚖️", name:"Mercy of Fate",    desc:"The long wait ends sooner for the patient.",
+    x:840, y:200,  maxRank:5, cost:1, requires:["root"],
+    effect:"-3 pity counter per rank (all pity types)" },
+  { id:"streakroot", icon:"🔥", name:"Infernal Passion",    desc:"Embers ignite earlier, building into an inferno.",
+    x:1120,y:200,  maxRank:3, cost:1, requires:["root"],
+    effect:"Streak multiplier increases by +0.2 per rank" },
+
+  // ── TIER 2 ───────────────────────────────────────────────
+  { id:"mythseeк",   icon:"🌀", name:"Void Magus",       desc:"You call to the mythic void within.",
+    x:100, y:360,  maxRank:3, cost:2, requires:["lucky"],
+    effect:"+0.25% mythic chance per rank" },
+  { id:"streak",     icon:"💫", name:"Inferno Streak",   desc:"Streaks ignite with primordial power.",
+    x:280, y:360,  maxRank:4, cost:2, requires:["lucky"],
+    effect:"Streak bonus applies earlier; scales faster" },
+  { id:"divseek",    icon:"✧",  name:"Divine Resonance", desc:"You vibrate at the frequency of heaven.",
+    x:460, y:360,  maxRank:3, cost:2, requires:["collector"],
+    effect:"+0.15% divine chance per rank" },
+  { id:"hoard",      icon:"🏛️", name:"Hoarder",          desc:"Each name feeds the collection's hunger.",
+    x:660, y:360,  maxRank:3, cost:2, requires:["collector"],
+    effect:"+5 milestone rewards per rank" },
+  { id:"pityleg",    icon:"👑", name:"Royal Decree",     desc:"Legends answer to your command.",
+    x:840, y:360,  maxRank:3, cost:2, requires:["pity"],
+    effect:"-7 legendary pity threshold per rank" },
+  { id:"cursesense", icon:"☠️", name:"Curse Affinity",   desc:"Darkness recognizes one of its own.",
+    x:1000,y:360,  maxRank:3, cost:2, requires:["pity"],
+    effect:"+0.4% cursed chance per rank" },
+  { id:"spectralsense",icon:"◈",name:"Prismatic Bond",   desc:"Reality bends to acknowledge your presence.",
+    x:1120,y:360,  maxRank:3, cost:2, requires:["streakroot"],
+    effect:"+0.12% spectral chance per rank" },
+
+  // ── TIER 3 ───────────────────────────────────────────────
+  { id:"voidcall",   icon:"🌌", name:"Void Descent",     desc:"The void opens at your call.",
+    x:100, y:520,  maxRank:2, cost:3, requires:["mythseeк"],
+    effect:"+0.6% mythic chance; guarantees mythic every 40 rolls" },
+  { id:"heatwave",   icon:"🌋", name:"Eternal Flame",    desc:"Your streak becomes immortal.",
+    x:280, y:520,  maxRank:3, cost:3, requires:["streak"],
+    effect:"Streak never breaks; persists indefinitely" },
+  { id:"radiance",   icon:"☀️", name:"Solar Ascension",  desc:"You become a beacon of divine light.",
+    x:460, y:520,  maxRank:2, cost:3, requires:["divseek"],
+    effect:"+0.5% divine chance; divine pulls guaranteed every 20 rolls" },
+  { id:"archive2",   icon:"📚", name:"Grand Archive",    desc:"A monument to forgotten history.",
+    x:660, y:520,  maxRank:2, cost:3, requires:["hoard"],
+    effect:"+15 total rarity points per rank" },
+  { id:"quickpity",  icon:"⚡", name:"Fate Accelerant",  desc:"Time bends to your will.",
+    x:840, y:520,  maxRank:2, cost:3, requires:["pityleg"],
+    effect:"-10 rare pity per rank; pity cuts in half" },
+  { id:"darkbloom",  icon:"🩸", name:"Dark Ascension",   desc:"Cursed power feeds your own strength.",
+    x:1000,y:520,  maxRank:2, cost:3, requires:["cursesense"],
+    effect:"Cursed names grant +2 streak & +1% to all rarities for 3 rolls" },
+  { id:"prismatica", icon:"🌈", name:"Prismatic Rupture", desc:"Reality fractures into infinite possibility.",
+    x:1200,y:520,  maxRank:2, cost:3, requires:["spectralsense"],
+    effect:"+0.4% spectral; spectral names double next pity reduction" },
+
+  // ── TIER 4 (deeper nodes) ────────────────────────────────
+  { id:"timeless",   icon:"⏳", name:"Eternal Cycle",    desc:"You transcend the flow of fortune.",
+    x:190, y:680,  maxRank:1, cost:5, requires:["voidcall","heatwave"],
+    effect:"Every 35 rolls grants a guaranteed legendary+" },
+  { id:"godtouch",   icon:"🌟", name:"Divine Union",     desc:"You merge with the divine principle.",
+    x:560, y:680,  maxRank:1, cost:5, requires:["radiance","archive2"],
+    effect:"+2% divine; divine & mythic share a single pity counter" },
+  { id:"fateless",   icon:"🎲", name:"Shattered Chains",  desc:"Your destiny becomes your own.",
+    x:920, y:680,  maxRank:1, cost:5, requires:["quickpity","darkbloom"],
+    effect:"Pity counters reduced 75%; +1% to all rarities" },
+  { id:"prismveil",  icon:"💎", name:"Dimensional Tear",  desc:"The boundary between worlds dissolves.",
+    x:1200,y:680,  maxRank:1, cost:5, requires:["prismatica"],
+    effect:"+2% spectral; spectral becomes your second pity target" },
+
+  // ── TIER 5 (pre-apex) ────────────────────────────────────
+  { id:"worldweave", icon:"🕸️", name:"Cosmic Thread",     desc:"All existence flows through you.",
+    x:370, y:820,  maxRank:1, cost:6, requires:["timeless","godtouch"],
+    effect:"Each collected rare+ gives +0.25% to ALL rarities permanently" },
+  { id:"soulharvest",icon:"💀", name:"Ascended Hunger",  desc:"Light and darkness feed the same power.",
+    x:700, y:820,  maxRank:1, cost:6, requires:["fateless","godtouch"],
+    effect:"Cursed/Divine names grant +2% to opposite rarity for 10 rolls" },
+  { id:"beyond",     icon:"🔮", name:"Beyond Infinity",  desc:"You glimpse what lies past all divinity.",
+    x:1060,y:820,  maxRank:1, cost:6, requires:["prismveil","fateless"],
+    effect:"+3% spectral; spectral pity drops to 1/3 normal" },
+
+  // ── APEX ─────────────────────────────────────────────────
+  { id:"apex",       icon:"👁️", name:"The Nameless One", desc:"You have transcended names themselves. You ARE the naming.",
+    x:700, y:960,  maxRank:1, cost:10, requires:["worldweave","soulharvest","beyond"],
+    effect:"All rarities +100% chance; next rebirth grants 3x skill points; earn infinite streaks" }
+];
+
+const SKILL_CONNECTIONS = [
+  ["root","lucky"],["root","collector"],["root","pity"],["root","streakroot"],
+  ["lucky","mythseeк"],["lucky","streak"],
+  ["collector","divseek"],["collector","hoard"],
+  ["pity","pityleg"],["pity","cursesense"],
+  ["streakroot","spectralsense"],
+  ["mythseeк","voidcall"],["streak","heatwave"],
+  ["divseek","radiance"],["hoard","archive2"],
+  ["pityleg","quickpity"],["cursesense","darkbloom"],
+  ["spectralsense","prismatica"],
+  ["voidcall","timeless"],["heatwave","timeless"],
+  ["radiance","godtouch"],["archive2","godtouch"],
+  ["quickpity","fateless"],["darkbloom","fateless"],
+  ["prismatica","prismveil"],
+  ["timeless","worldweave"],["godtouch","worldweave"],
+  ["fateless","soulharvest"],["godtouch","soulharvest"],
+  ["prismveil","beyond"],["fateless","beyond"],
+  ["worldweave","apex"],["soulharvest","apex"],["beyond","apex"]
+];
+
+// ═══════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════
+window.collected        = {};
+window.totalRolls       = 0;
+window.activeStyle      = "classic";
+window.rollHistory      = [];
+window.rebirthCount     = 0;
+window.totalSkillPoints = 0;
+window.spentSkillPoints = 0;
+window.unlockedSkills   = {}; // {nodeId: rank}
+window.equippedRings    = [];
+window.ringVault        = [];
+window._ringBonuses     = {};
+
+let currentTab   = 'all';
+let currentPage  = 0;
+let coverFlipped = false;
+let isRolling    = false;
+let saveTimer    = null;
+let streak       = 0;
+let lastRarity   = null;
+let pityRare     = 0;
+let pityLeg      = 0;
+let completedConstellations = new Set();
+let rebirthCutsceneActive = false;
+const NAMES_PER_PAGE = 30;
+const allNamesFlat = () => Object.values(NAMES).flat();
+
+// ═══════════════════════════════════════════════════════════
+// KEYBOARD
+// ═══════════════════════════════════════════════════════════
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeBook(); closeShop(); closeConstellation();
+    if (document.getElementById('skillTreeOverlay').classList.contains('active')) closeSkillTree();
+    return;
+  }
+  if ((e.key === ' ' || e.key === 'Enter') && !document.querySelector('.overlay.open') &&
+      !document.getElementById('skillTreeOverlay').classList.contains('active')) {
+    e.preventDefault(); doRoll();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+// ROLL
+// ═══════════════════════════════════════════════════════════
+function getSkillBonus(id) {
+  return (window.unlockedSkills[id] || 0);
+}
+
+function rollWeightedRarity() {
+  pityRare++; pityLeg++;
+  const pityLegThresh = 80 - (getSkillBonus('pityleg') * 5) - (getSkillBonus('fateless') ? 40 : 0);
+  const pityRareThresh= 25 - (getSkillBonus('quickpity') * 8) - (getSkillBonus('fateless') ? 12 : 0);
+  if (pityLeg >= Math.max(pityLegThresh, 20)) { pityLeg=0; pityRare=0; return "legendary"; }
+  if (pityRare >= Math.max(pityRareThresh, 8)) { pityRare=0; return "rare"; }
+
+  const bonus = streak >= 5 ? 0.6 : streak >= (getSkillBonus('streak') ? 2 : 3) ? 0.3 : 0;
+  const r = Math.random() * 100;
+  const rb = window._ringBonuses || {};
+  const mythicBonus   = getSkillBonus('mythseeк') * 0.15 + getSkillBonus('voidcall') * 0.5 + (getSkillBonus('apex') ? 50 : 0) * 0.01 * 0.4 + (rb.mythic_bonus||0);
+  const divineBonus   = getSkillBonus('divseek') * 0.1 + getSkillBonus('radiance') * 0.3 + (getSkillBonus('godtouch') ? 1 : 0) + (getSkillBonus('apex') ? 50 : 0) * 0.01 * 0.3 + (rb.divine_bonus||0);
+  const cursedBonus   = getSkillBonus('cursesense') * 0.3 + (getSkillBonus('apex') ? 50 : 0) * 0.01 * 0.15 + (rb.cursed_bonus||0);
+  const luckyBonus    = getSkillBonus('lucky') * 0.02 + (rb.legendary_bonus||0)*0.1;
+  const spectralBonus = getSkillBonus('spectralsense') * 0.08 + getSkillBonus('prismatica') * 0.25 + (getSkillBonus('beyond') ? 1.5 : 0) + (rb.spectral_bonus||0);
+  const rareRingBonus = (rb.rare_bonus||0);
+
+  if (r < 0.04 + spectralBonus)                                                       return "spectral";
+  if (r < 0.04 + spectralBonus + 0.15 + divineBonus)                                 return "divine";
+  if (r < 0.04 + spectralBonus + 0.15 + divineBonus + 0.4 + mythicBonus)             return "mythic";
+  if (r < 0.04 + spectralBonus + 0.15 + divineBonus + 0.4 + mythicBonus + 1.5 + cursedBonus) return "cursed";
+  if (r < 0.04 + spectralBonus + 0.15 + divineBonus + 0.4 + mythicBonus + 1.5 + cursedBonus + 4 + bonus + luckyBonus*3) return "legendary";
+  if (r < 0.04 + spectralBonus + 0.15 + divineBonus + 0.4 + mythicBonus + 1.5 + cursedBonus + 4 + bonus + luckyBonus*3 + 16 + bonus*2 + luckyBonus*4 + rareRingBonus) return "rare";
+  if (r < 56 + bonus) return "uncommon";
+  return "common";
+}
+
+function rollName() {
+  const rarity = rollWeightedRarity();
+  const pool = NAMES[rarity];
+  return { name: pool[Math.floor(Math.random() * pool.length)], rarity };
+}
+
+function handleRollClick(e) {
+  const btn = e.currentTarget;
+  const r = document.createElement('div');
+  r.className = 'ripple';
+  const rect = btn.getBoundingClientRect();
+  const sz = Math.max(rect.width, rect.height);
+  r.style.cssText = `width:${sz}px;height:${sz}px;left:${e.clientX-rect.left-sz/2}px;top:${e.clientY-rect.top-sz/2}px`;
+  btn.appendChild(r);
+  setTimeout(() => r.remove(), 550);
+  doRoll();
+}
+
+function doRoll() {
+  if (isRolling) return;
+  isRolling = true;
+
+  const el    = document.getElementById('resultName');
+  const badge = document.getElementById('rarityBadge');
+  const card  = document.getElementById('card');
+  const nb    = document.getElementById('newBadge');
+
+  badge.className = 'rarity-badge';
+  card.className  = 'card';
+  nb.classList.remove('show');
+
+  const names = allNamesFlat();
+  let phase = 'fast', ticks = 0;
+  const phaseTicks = { fast: 10 + Math.floor(Math.random()*6), mid: 5, slow: 4 };
+
+  // ── Expert+ custom roll animation hook ──
+  const _expertStyle = window.activeStyle || '';
+  const _isExpert    = window.EXPERT_STYLES && window.EXPERT_STYLES.has(_expertStyle);
+  if (_isExpert) el.dataset.expertStyle = _expertStyle;
+  else delete el.dataset.expertStyle;
+  if (_isExpert && typeof window._onExpertRollStart === 'function') {
+    window._onExpertRollStart(el, _expertStyle);
+  }
+
+  el.className = 'result-name spin-fast';
+  el.textContent = names[Math.floor(Math.random()*names.length)];
+
+  const ticker = setInterval(() => {
+    if (!(_isExpert && window._expertTickOverride && window._expertTickOverride(el, phase))) {
+      el.textContent = names[Math.floor(Math.random()*names.length)];
+    }
+    ticks++;
+    if (phase === 'fast' && ticks >= phaseTicks.fast) {
+      phase = 'mid'; ticks = 0; el.className = 'result-name spin-mid';
+      if (_isExpert) el.dataset.expertStyle = _expertStyle;
+    } else if (phase === 'mid' && ticks >= phaseTicks.mid) {
+      phase = 'slow'; ticks = 0; el.className = 'result-name spin-slow';
+      if (_isExpert) el.dataset.expertStyle = _expertStyle;
+    } else if (phase === 'slow' && ticks >= phaseTicks.slow) {
+      clearInterval(ticker); finalise();
+    }
+  }, phase === 'fast' ? 55 : 90);
+
+  function finalise() {
+    const { name, rarity } = rollName();
+    const isNew = !window.collected[name];
+    window.collected[name] = rarity;
+    window.totalRolls++;
+
+    window.rollHistory.unshift({ name, rarity });
+    if (window.rollHistory.length > 5) window.rollHistory.pop();
+    rebuildHistory();
+
+    updateRollCounter();
+    checkMilestone(window.totalRolls);
+    updateRebirthButton();
+
+    if (rarity === lastRarity && rarity !== 'common') streak++;
+    else streak = (rarity !== 'common') ? 1 : 0;
+    // Dark bloom: cursed resets streak to 1 instead of 0
+    if (rarity === 'cursed' && getSkillBonus('darkbloom')) streak = Math.max(streak, 1);
+    lastRarity = rarity;
+    updateStreakUI(rarity);
+
+    const cfg = RARITY_CONFIG[rarity];
+    el.className = `result-name rarity-${rarity} landing`;
+    el.textContent = name;
+
+    badge.textContent = cfg.label;
+    badge.style.background = cfg.bg;
+    badge.style.color = cfg.textColor;
+    badge.className = 'rarity-badge visible';
+    card.className  = `card rarity-${rarity}`;
+
+    if (isNew) { nb.classList.add('show'); setTimeout(()=>nb.classList.remove('show'), 2600); }
+
+    if (rarity === 'divine') {
+      triggerFlash('divine-flash');
+      spawnParticles(card, 40, ['#ffd700','#ffe680','#fff7a0','#ffec00','#fffde0','#ffcc00','#ffffff']);
+      toast(`✧ Divine! ${name}`, 'divine-toast');
+    } else if (rarity === 'spectral') {
+      triggerFlash('spectral-flash');
+      spawnParticles(card, 50, ['#00ffff','#0088ff','#aa00ff','#ff0088','#ffffff','#00ccff','#ff44aa']);
+      toast(`◈ Spectral! ${name}`, 'spectral-toast');
+    } else if (rarity === 'mythic') {
+      triggerFlash('mythic-flash');
+      spawnParticles(card, 32, ['#ff00ff','#cc00ff','#ff44ff','#8800ff','#ffffff','#ff88ff']);
+      toast(`✦ Mythic! ${name}`, 'mythic-toast');
+    } else if (rarity === 'legendary') {
+      triggerFlash('legendary-flash');
+      spawnParticles(card, 24, ['#f0c040','#ff80c0','#80c0ff','#c080ff','#ffffff','#ffd080']);
+      if (isNew) toast(`✦ Legendary! ${name}`, 'legendary-toast');
+    } else if (rarity === 'cursed') {
+      triggerFlash('cursed-flash');
+      spawnParticles(card, 16, ['#8b0000','#cc0000','#400000','#ff4444','#660000']);
+      toast(`☠ Cursed… ${name}`, 'cursed-toast');
+    } else if (rarity === 'rare' && isNew) {
+      spawnParticles(card, 10, ['#4080c0','#80b0f0','#c0d8ff']);
+    }
+
+    checkConstellations(name);
+    setTimeout(() => { isRolling = false; }, 320);
+    scheduleSave();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// REBIRTH BUTTON
+// ═══════════════════════════════════════════════════════════
+function updateRebirthButton() {
+  const count = Object.keys(window.collected).length;
+  const btn = document.getElementById('rebirthBtn');
+  if (count >= 100) {
+    btn.classList.add('show');
+  } else {
+    btn.classList.remove('show');
+  }
+  // Update book banner
+  const banner = document.getElementById('bookRebirthBanner');
+  const brbCount = document.getElementById('brbCount');
+  if (count >= 100) {
+    banner.classList.add('show');
+    brbCount.textContent = count;
+  } else {
+    banner.classList.remove('show');
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// REBIRTH CUTSCENE
+// ═══════════════════════════════════════════════════════════
+function startRebirthCutscene() {
+  const names = Object.keys(window.collected);
+  if (names.length < 100) return;
+
+  rebirthCutsceneActive = true;
+  const cs = document.getElementById('rebirthCutscene');
+  const pile = document.getElementById('rbNamePile');
+  const title = document.getElementById('rbTitle');
+  const sub = document.getElementById('rbSubtitle');
+  const fireBg = document.getElementById('rbFireBg');
+
+  cs.classList.add('active');
+  pile.innerHTML = '';
+  title.classList.remove('show');
+  sub.classList.remove('show');
+  fireBg.classList.remove('show');
+
+  // Shuffle names
+  const shuffled = [...names].sort(() => Math.random() - 0.5);
+  const total = shuffled.length;
+  const displayCount = Math.min(total, 100);
+  const namesToShow = shuffled.slice(0, displayCount);
+
+  const RARITY_COLORS = {
+    common:'#aaa8a4', uncommon:'#4aaa3a', rare:'#3a5a8a',
+    legendary:'#e8960a', mythic:'#dd44ff', cursed:'#dd0000', divine:'#ffd700', spectral:'#00e5ff'
+  };
+
+  // Phase 1: Names rise up in a pile with stagger effect
+  namesToShow.forEach((name, i) => {
+    const el = document.createElement('div');
+    el.className = 'rb-name-item';
+    const rarity = window.collected[name] || 'common';
+    const col = RARITY_COLORS[rarity] || '#aaa';
+    const size = 11 + Math.random() * 18;
+    const tx = 50 + Math.random() * (window.innerWidth - 100);
+    const ty = 60 + Math.random() * (window.innerHeight * 0.6);
+    const rot = (Math.random() - 0.5) * 50;
+    const rot2 = (Math.random() - 0.5) * 20;
+    const delay = i * 18;
+    const dur = 0.7 + Math.random() * 0.6;
+
+    el.style.cssText = `
+      font-size:${size}px;color:${col};
+      left:${tx}px;top:${ty}px;
+      --dur:${dur}s;--delay:${delay}ms;
+      --rot:${rot}deg;--rot2:${rot2}deg;
+      --ty:${(Math.random()-0.5)*50}px;
+      --ease-spring:cubic-bezier(.34,1.56,.64,1);
+    `;
+    el.textContent = name;
+    pile.appendChild(el);
+  });
+
+  // Phase 2: Dramatic burn sequence with more particles
+  const burnStart = displayCount * 18 + 800;
+  setTimeout(() => {
+    fireBg.classList.add('show');
+    // Rapid fire effect at start
+    for(let p = 0; p < 15; p++) {
+      setTimeout(() => {
+        const flare = document.createElement('div');
+        flare.className = 'rb-ash-particle';
+        const sz = 8 + Math.random() * 12;
+        const angle = Math.random() * Math.PI * 2;
+        const dist = 200 + Math.random() * 300;
+        flare.style.cssText = `
+          width:${sz}px;height:${sz}px;
+          left:calc(50% - ${sz/2}px);top:calc(50% - ${sz/2}px);
+          --adur:${2 + Math.random() * 1.5}s;
+          --adelay:${p * 50}ms;
+          --ax:${(Math.cos(angle)*dist).toFixed(0)}px;
+          --ay:${(Math.sin(angle)*dist).toFixed(0)}px;
+        `;
+        document.getElementById('rebirthCutscene').appendChild(flare);
+        setTimeout(() => flare.remove(), 3500 + p*50);
+      }, p * 30);
+    }
+    
+    // Burn individual names
+    pile.querySelectorAll('.rb-name-item').forEach((el, i) => {
+      el.style.setProperty('--bdur', (0.6 + Math.random() * 0.7) + 's');
+      el.style.setProperty('--bdelay', (i * 12) + 'ms');
+      setTimeout(() => el.classList.add('burning'), i * 12);
+      
+      // Ash particles from each name
+      for (let a = 0; a < 4; a++) {
+        const ash = document.createElement('div');
+        ash.className = 'rb-ash-particle';
+        const sz = 2.5 + Math.random() * 6;
+        const rect = el.getBoundingClientRect();
+        const ax = (Math.random() - 0.5) * 150;
+        const ay = -(80 + Math.random() * 180);
+        ash.style.cssText = `
+          width:${sz}px;height:${sz}px;
+          left:${rect.left + Math.random()*rect.width}px;
+          top:${rect.top}px;
+          --adur:${1.8 + Math.random() * 2.2}s;
+          --adelay:${i*12 + a*100}ms;
+          --ax:${ax}px;--ay:${ay}px;
+        `;
+        document.body.appendChild(ash);
+        setTimeout(() => ash.remove(), 4000 + i*12 + a*100);
+      }
+    });
+  }, burnStart);
+
+  // Phase 3: Title and subtitle with dramatic timing
+  const titleStart = burnStart + displayCount * 12 + 1000;
+  setTimeout(() => {
+    title.classList.add('show');
+    setTimeout(() => sub.classList.add('show'), 600);
+  }, titleStart);
+
+  // Phase 4: Transition to skill tree with fade
+  const skillStart = titleStart + 2600;
+  setTimeout(() => {
+    doRebirth();
+    cs.classList.remove('active');
+    rebirthCutsceneActive = false;
+    openSkillTree();
+  }, skillStart);
+}
+
+function skipRebirth() {
+  if (!rebirthCutsceneActive) return;
+  const cs = document.getElementById('rebirthCutscene');
+  cs.classList.remove('active');
+  rebirthCutsceneActive = false;
+  doRebirth();
+  openSkillTree();
+}
+
+function doRebirth() {
+  const nameCount = Object.keys(window.collected).length;
+  // Skill points: base 3 per 100 names, +1 per extra 10, multiplier if apex
+  let points = Math.floor(nameCount / 100) * 3 + Math.floor((nameCount % 100) / 10);
+  if (getSkillBonus('apex')) points *= 2;
+  window.totalSkillPoints += points;
+  window.rebirthCount++;
+  // Reset collection but keep rolls and skills
+  window.collected = {};
+  window.rollHistory = [];
+  pityRare = 0; pityLeg = 0; streak = 0; lastRarity = null;
+  updateRebirthButton();
+  updateRollCounter();
+  rebuildHistory();
+  renderPage();
+  const el = document.getElementById('resultName');
+  el.className = 'result-name idle';
+  el.textContent = 'press roll';
+  document.getElementById('rarityBadge').className = 'rarity-badge';
+  document.getElementById('card').className = 'card idle-pulse';
+  toast(`🔥 Rebirth ${window.rebirthCount}! +${points} skill points earned`, 'rebirth-toast');
+  scheduleSave();
+}
+
+// ═══════════════════════════════════════════════════════════
+// SKILL TREE
+// ═══════════════════════════════════════════════════════════
+let stDrag = { active:false, startX:0, startY:0, offsetX:0, offsetY:0 };
+let stOffset = { x: -250, y: -20 };
+
+function openSkillTree() {
+  const overlay = document.getElementById('skillTreeOverlay');
+  overlay.classList.add('active');
+  renderSkillTree();
+  setupSkillTreeDrag();
+  updateStHeader();
+}
+
+function closeSkillTree() {
+  document.getElementById('skillTreeOverlay').classList.remove('active');
+}
+
+function updateStHeader() {
+  const available = window.totalSkillPoints - window.spentSkillPoints;
+  document.getElementById('stPoints').textContent = available;
+  document.getElementById('stSubtitle').textContent =
+    `Rebirth ${window.rebirthCount} — ${window.totalSkillPoints} total points`;
+}
+
+function renderSkillTree() {
+  const canvas = document.getElementById('stCanvas');
+  const svg = document.getElementById('stSvg');
+
+  // Set canvas size
+  const W = 1400, H = 1080;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+  svg.setAttribute('width',  W);
+  svg.setAttribute('height', H);
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+
+  // Apply offset
+  canvas.style.transform = `translate(${stOffset.x}px,${stOffset.y}px)`;
+
+  // Clear
+  svg.innerHTML = '';
+  canvas.querySelectorAll('.sn').forEach(n => n.remove());
+
+  const available = window.totalSkillPoints - window.spentSkillPoints;
+
+  // Draw connections
+  SKILL_CONNECTIONS.forEach(([fromId, toId]) => {
+    const from = SKILL_NODES.find(n => n.id === fromId);
+    const to   = SKILL_NODES.find(n => n.id === toId);
+    if (!from || !to) return;
+    const fromRank = window.unlockedSkills[fromId] || 0;
+    const toRank   = window.unlockedSkills[toId]   || 0;
+    const fromMax  = SKILL_NODES.find(n => n.id === fromId)?.maxRank || 1;
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1', from.x); line.setAttribute('y1', from.y);
+    line.setAttribute('x2', to.x);   line.setAttribute('y2', to.y);
+    line.className.baseVal = `st-line${toRank > 0 ? (fromRank >= fromMax ? ' maxed' : ' lit') : ''}`;
+    svg.appendChild(line);
+  });
+
+  // Draw nodes
+  SKILL_NODES.forEach(node => {
+    const rank    = window.unlockedSkills[node.id] || 0;
+    const isMax   = rank >= node.maxRank;
+    const reqsMet = node.requires.length === 0 || node.requires.every(r => (window.unlockedSkills[r] || 0) > 0);
+    const canAfford = available >= node.cost;
+    const isLocked = !reqsMet;
+
+    const el = document.createElement('div');
+    el.className = 'sn' + (isMax ? ' maxed' : rank > 0 ? ' unlocked' : isLocked ? ' locked' : canAfford ? ' available' : '');
+    el.style.cssText = `left:${node.x - 44}px;top:${node.y - 44}px`;
+
+    el.innerHTML = `
+      <span class="sn-icon">${node.icon}</span>
+      <span class="sn-name">${node.name}</span>
+      <span class="sn-rank">${node.maxRank > 1 ? `${rank}/${node.maxRank}` : (rank ? '✓' : '○')}</span>
+      <div class="sn-tooltip">
+        <div class="sn-tooltip-name">${node.name}</div>
+        <div class="sn-tooltip-desc">${node.desc}</div>
+        <div class="sn-tooltip-stat">${node.effect}</div>
+        <div class="sn-tooltip-cost">
+          ${isMax ? '✓ Fully Upgraded' :
+            isLocked ? '🔒 Unlock prerequisites first' :
+            !canAfford ? `Need ${node.cost} pts (have ${available})` :
+            `Cost: ${node.cost} point${node.cost>1?'s':''} — Click to upgrade`}
+        </div>
+      </div>
+    `;
+
+    if (!isMax && !isLocked && canAfford) {
+      el.addEventListener('click', () => upgradeSkill(node.id));
+      el.style.cursor = 'pointer';
+    }
+
+    canvas.appendChild(el);
+  });
+}
+
+function upgradeSkill(nodeId) {
+  const node = SKILL_NODES.find(n => n.id === nodeId);
+  if (!node) return;
+  const rank = window.unlockedSkills[nodeId] || 0;
+  if (rank >= node.maxRank) return;
+  const available = window.totalSkillPoints - window.spentSkillPoints;
+  if (available < node.cost) return;
+  // Check requirements (at least 1 rank)
+  const reqsMet = node.requires.every(r => (window.unlockedSkills[r] || 0) > 0);
+  if (!reqsMet && node.requires.length > 0) return;
+
+  window.unlockedSkills[nodeId] = rank + 1;
+  window.spentSkillPoints += node.cost;
+  renderSkillTree();
+  updateStHeader();
+  toast(`✦ ${node.name} upgraded to rank ${rank+1}!`, 'const-toast');
+  scheduleSave();
+}
+
+function setupSkillTreeDrag() {
+  const wrap = document.getElementById('stCanvasWrap');
+  const canvas = document.getElementById('stCanvas');
+
+  const applyOffset = () => {
+    canvas.style.transform = `translate(${stOffset.x}px,${stOffset.y}px)`;
+  };
+
+  // Mouse
+  wrap.onmousedown = e => {
+    if (e.target.closest('.sn')) return;
+    stDrag.active = true;
+    stDrag.startX = e.clientX - stOffset.x;
+    stDrag.startY = e.clientY - stOffset.y;
+    wrap.style.cursor = 'grabbing';
+  };
+  document.onmousemove = e => {
+    if (!stDrag.active) return;
+    stOffset.x = e.clientX - stDrag.startX;
+    stOffset.y = e.clientY - stDrag.startY;
+    applyOffset();
+  };
+  document.onmouseup = () => {
+    stDrag.active = false;
+    wrap.style.cursor = 'grab';
+  };
+
+  // Touch / iPad
+  wrap.ontouchstart = e => {
+    if (e.touches.length !== 1) return;
+    const t = e.touches[0];
+    stDrag.active = true;
+    stDrag.startX = t.clientX - stOffset.x;
+    stDrag.startY = t.clientY - stOffset.y;
+  };
+  wrap.ontouchmove = e => {
+    if (!stDrag.active || e.touches.length !== 1) return;
+    e.preventDefault();
+    const t = e.touches[0];
+    stOffset.x = t.clientX - stDrag.startX;
+    stOffset.y = t.clientY - stDrag.startY;
+    applyOffset();
+  };
+  wrap.ontouchend = () => { stDrag.active = false; };
+}
+
+// ═══════════════════════════════════════════════════════════
+// HISTORY TRAY
+// ═══════════════════════════════════════════════════════════
+function rebuildHistory() {
+  const tray = document.getElementById('historyTray');
+  tray.innerHTML = '';
+  window.rollHistory.forEach((item, i) => {
+    const chip = document.createElement('div');
+    chip.className = `hist-chip rarity-${item.rarity}`;
+    chip.textContent = item.name;
+    chip.style.animationDelay = `${i * 30}ms`;
+    chip.style.opacity = String(1 - i * 0.15);
+    tray.appendChild(chip);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// PARTICLES
+// ═══════════════════════════════════════════════════════════
+function spawnParticles(container, count, colors) {
+  for (let i = 0; i < count; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const sz = 3 + Math.random() * 9;
+    const a  = Math.random() * Math.PI * 2;
+    const d  = 55 + Math.random() * 140;
+    const dur = (0.5 + Math.random() * 0.8).toFixed(2);
+    p.style.cssText = `
+      width:${sz}px;height:${sz}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      left:calc(50% - ${sz/2}px);top:calc(50% - ${sz/2}px);
+      border-radius:${Math.random()>.5?'50%':'2px'};
+      --dx:${(Math.cos(a)*d).toFixed(1)}px;--dy:${(Math.sin(a)*d).toFixed(1)}px;
+      --dur:${dur}s;animation-delay:${(Math.random()*.12).toFixed(2)}s;
+    `;
+    container.appendChild(p);
+    setTimeout(() => p.remove(), 1500);
+  }
+}
+
+function triggerFlash(cls) {
+  const el = document.getElementById('flashOverlay');
+  el.className = `flash-overlay ${cls}`;
+  setTimeout(() => { el.className = 'flash-overlay'; }, 1400);
+}
+
+// ═══════════════════════════════════════════════════════════
+// STREAK UI
+// ═══════════════════════════════════════════════════════════
+function updateStreakUI(rarity) {
+  const row   = document.getElementById('streakRow');
+  const bonus = document.getElementById('streakBonus');
+  const pips  = document.querySelectorAll('.pip');
+  row.classList.add('visible');
+  pips.forEach((pip, i) => {
+    const wasLit = pip.className.includes('lit-');
+    const nowLit = i < streak;
+    pip.className = 'pip' + (nowLit ? ` lit-${rarity}` : '');
+    if (nowLit && !wasLit) pip.classList.add('popping');
+    setTimeout(() => pip.classList.remove('popping'), 350);
+  });
+  if (streak >= 3) {
+    bonus.textContent = streak >= 5 ? '🔥 MAX HEAT — boosted odds!' : `🔥 ×${streak} streak`;
+    bonus.style.opacity = '1';
+    bonus.style.transform = 'scale(1)';
+  } else {
+    bonus.style.opacity = '0';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// MILESTONES
+// ═══════════════════════════════════════════════════════════
+function checkMilestone(n) {
+  if (MILESTONES.includes(n)) {
+    toast(`🎲 ${n} rolls reached!`, 'milestone-toast');
+  }
+  (window.BUTTON_STYLES || []).forEach(s => {
+    if (s.unlockAt > 0 && n === s.unlockAt) {
+      setTimeout(() => toast(`🎨 Style unlocked: ${s.name}!`, 'milestone-toast'), 500);
+    }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════
+// CONSTELLATIONS
+// ═══════════════════════════════════════════════════════════
+let newlyFoundStars = new Set();
+let constFilter = 'all';
+let _constStarAnim = null;
+
+const CONST_RARITY_COLORS = {
+  common:'#8888aa',uncommon:'#5a9a5a',rare:'#4a70cc',
+  legendary:'#c8960a',mythic:'#cc44ff',cursed:'#cc2020',
+  divine:'#e8c820',spectral:'#00e5ff'
+};
+
+function setConstFilter(f, btn) {
+  constFilter = f;
+  document.querySelectorAll('.const-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderConstellation();
+}
+
+function openConstellation() {
+  renderConstellation();
+  const overlay = document.getElementById('constOverlay');
+  overlay.classList.add('open');
+  startConstStarfield();
+  fireShootingStars();
+}
+
+function closeConstellation() {
+  document.getElementById('constOverlay').classList.remove('open');
+  if (_constStarAnim) { cancelAnimationFrame(_constStarAnim); _constStarAnim = null; }
+}
+
+// ── Live starfield canvas ────────────────────────────────
+function startConstStarfield() {
+  const canvas = document.getElementById('constStarCanvas');
+  if (!canvas) return;
+  const panel = canvas.closest('.constellation-panel');
+  canvas.width = panel.offsetWidth || 860;
+  canvas.height = panel.offsetHeight || 750;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+
+  const stars = Array.from({length:160}, () => ({
+    x: Math.random()*W, y: Math.random()*H,
+    r: .4 + Math.random()*1.4,
+    speed: .015 + Math.random()*.04,
+    brightness: .1 + Math.random()*.5,
+    phase: Math.random()*Math.PI*2,
+    color: Math.random() < .08 ? `hsl(${200+Math.random()*80},80%,70%)` : '#fff'
+  }));
+
+  function draw(t) {
+    ctx.clearRect(0,0,W,H);
+    stars.forEach(s => {
+      const alpha = s.brightness * (.6 + .4*Math.sin(t*.001*s.speed*60 + s.phase));
+      ctx.beginPath();
+      ctx.arc(s.x, s.y, s.r, 0, Math.PI*2);
+      ctx.fillStyle = s.color === '#fff'
+        ? `rgba(255,255,255,${alpha})`
+        : s.color.replace(')',`,${alpha})`).replace('hsl','hsla');
+      ctx.fill();
+    });
+    _constStarAnim = requestAnimationFrame(draw);
+  }
+  _constStarAnim = requestAnimationFrame(draw);
+}
+
+// ── Shooting stars on open ───────────────────────────────
+function fireShootingStars() {
+  const panel = document.querySelector('.constellation-panel');
+  if (!panel) return;
+  // Remove old ones
+  panel.querySelectorAll('.const-shoot').forEach(e=>e.remove());
+  const count = 5 + Math.floor(Math.random()*4);
+  for (let i=0; i<count; i++) {
+    const el = document.createElement('div');
+    el.className = 'const-shoot';
+    const startX = Math.random()*100;
+    const startY = Math.random()*60;
+    const length = 60 + Math.random()*120;
+    const angle = 20 + Math.random()*30;
+    const tx = Math.cos(angle*Math.PI/180)*length;
+    const ty = Math.sin(angle*Math.PI/180)*length;
+    el.style.cssText = `
+      left:${startX}%;top:${startY}%;
+      width:${length}px;
+      --tx:${tx}px;
+      --dur:${(.4+Math.random()*.4).toFixed(2)}s;
+      --delay:${(i*.12+Math.random()*.15).toFixed(2)}s;
+      transform:rotate(${angle}deg);transform-origin:left center;
+    `;
+    panel.appendChild(el);
+    setTimeout(()=>el.remove(), 1800);
+  }
+}
+
+function renderConstellation() {
+  const body   = document.getElementById('constBody');
+  const search = (document.getElementById('constSearch')?.value||'').toLowerCase();
+  if (!body) return;
+  body.innerHTML = '';
+
+  let complete=0, titles=[], totalStars=0, foundStars=0;
+
+  // Compute all stats first
+  CONSTELLATIONS.forEach(c => {
+    const found  = c.names.filter(n => window.collected[n]).length;
+    const isDone = found === c.names.length;
+    totalStars += c.names.length;
+    foundStars += found;
+    if (isDone) { complete++; titles.push(`"${c.title}"`); }
+  });
+
+  // Update stat widgets
+  const sC = document.getElementById('constStatComplete');
+  const sS = document.getElementById('constStatStars');
+  const sT = document.getElementById('constStatTotal');
+  const tF = document.getElementById('constTotalFill');
+  if(sC) sC.textContent = complete;
+  if(sS) sS.textContent = foundStars;
+  if(sT) sT.textContent = totalStars;
+  if(tF) tF.style.width = totalStars>0 ? (foundStars/totalStars*100).toFixed(1)+'%' : '0%';
+
+  // Filter + render
+  let idx = 0;
+  CONSTELLATIONS.forEach(c => {
+    const found  = c.names.filter(n => window.collected[n]).length;
+    const total  = c.names.length;
+    const isDone = found === total;
+
+    // Filter logic
+    if (constFilter==='complete'    && !isDone) return;
+    if (constFilter==='inprogress'  && (isDone||found===0)) return;
+    if (constFilter==='locked'      && found>0) return;
+
+    // Search logic
+    if (search) {
+      const matchGroup = c.name.toLowerCase().includes(search) || c.title.toLowerCase().includes(search);
+      const matchStar  = c.names.some(n => n.toLowerCase().includes(search));
+      if (!matchGroup && !matchStar) return;
+    }
+
+    const rCol = CONST_RARITY_COLORS[c.rarity] || '#8888aa';
+    const g = document.createElement('div');
+    g.className = `const-group${isDone ? ' complete' : ''}`;
+    g.style.setProperty('--delay', `${idx * 0.04}s`);
+    idx++;
+
+    g.innerHTML = `
+      <div class="const-group-header">
+        <div class="const-group-name">
+          <span class="const-rarity-dot" style="background:${rCol};color:${rCol}"></span>
+          ${c.name}
+        </div>
+        <div class="const-group-reward">${isDone ? '✦ '+c.title : c.title}</div>
+      </div>
+      <div class="const-progress-line">${isDone ? '✦ Complete' : `${found} / ${total} discovered`}</div>
+      <div class="const-mini-bar"><div class="const-mini-fill" style="width:${(found/total*100).toFixed(0)}%"></div></div>
+      <div class="const-stars">
+        ${c.names.map(n => {
+          const f = !!window.collected[n];
+          const isNew = newlyFoundStars.has(n);
+          const matchSearch = search && n.toLowerCase().includes(search);
+          return `<div class="const-star${f?' found':''}${f&&isNew?' new-find':''}${matchSearch?' search-match':''}">${f?n:'???'}</div>`;
+        }).join('')}
+      </div>
+      ${c.lore ? `<div class="const-lore">"${c.lore}"</div>` : ''}
+    `;
+    body.appendChild(g);
+  });
+
+  if (idx===0) {
+    body.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:48px;color:#3a2860;font-size:11px;letter-spacing:.15em;text-transform:uppercase">No constellations match</div>';
+  }
+
+  newlyFoundStars.clear();
+  const p = document.getElementById('constProgress');
+  if(p) p.textContent = `${complete} / ${CONSTELLATIONS.length} complete`;
+  const tEl = document.getElementById('constTitles');
+  if(tEl) tEl.textContent = titles.length ? titles.slice(-2).join(' · ') : '';
+}
+
+function checkConstellations(newName) {
+  newlyFoundStars.add(newName);
+  CONSTELLATIONS.forEach(c => {
+    if (completedConstellations.has(c.id)) return;
+    const allFound = c.names.every(n => window.collected[n]);
+    if (allFound) {
+      completedConstellations.add(c.id);
+      setTimeout(() => toast(`✦ Constellation! ${c.name} — "${c.title}" unlocked`, 'const-toast'), 700);
+    }
+  });
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// RUNE CRAFTING SYSTEM
+// ═══════════════════════════════════════════════════════════
+
+// ── Data ─────────────────────────────────────────────────
+window.runeSlots    = [null, null, null]; // names in forge slots
+window.equippedRings = [];  // max 3 equipped rings
+window.ringVault     = [];  // all forged rings (unequipped)
+
+let _runeActiveSlot = null; // which slot user is filling
+
+// Ring type recipes — determined by rarity combination
+const RING_RECIPES = [
+  // Spectral combos
+  { rarities:['spectral','spectral'],      tier:'spectral', name:'Prismatic Eternity', gem:'◈', color:'#00e5ff',
+    effects:['spectral_bonus:+0.5%','pity_all:-5','roll_aura:chromatic'] },
+  { rarities:['spectral','divine'],         tier:'divine',   name:'Celestial Rift',    gem:'✦', color:'#e8c820',
+    effects:['divine_bonus:+0.4%','spectral_bonus:+0.3%','roll_aura:gold_prismatic'] },
+  { rarities:['spectral','mythic'],         tier:'mythic',   name:'Voidprism Band',    gem:'✦', color:'#cc44ff',
+    effects:['mythic_bonus:+0.3%','spectral_bonus:+0.2%','roll_aura:void_prismatic'] },
+  // Mythic combos
+  { rarities:['mythic','mythic'],           tier:'mythic',   name:'Twin Infinity',     gem:'∞', color:'#aa22ee',
+    effects:['mythic_bonus:+0.6%','pity_legendary:-10','roll_aura:twin_void'] },
+  { rarities:['mythic','divine'],           tier:'mythic',   name:'Godforged Seal',    gem:'⊕', color:'#cc88ff',
+    effects:['divine_bonus:+0.5%','mythic_bonus:+0.3%','roll_aura:godlight'] },
+  { rarities:['mythic','legendary','legendary'], tier:'mythic', name:'Arc of Legends', gem:'⚡', color:'#ff88cc',
+    effects:['legendary_bonus:+0.8%','mythic_bonus:+0.2%','pity_legendary:-12','roll_aura:lightning_arc'] },
+  // Divine combos
+  { rarities:['divine','divine'],           tier:'divine',   name:'Halo of Eternity', gem:'✧', color:'#ffd700',
+    effects:['divine_bonus:+0.8%','pity_all:-8','roll_aura:halo'] },
+  { rarities:['divine','legendary'],        tier:'legendary',name:'Crown Sigil',       gem:'♛', color:'#e8aa10',
+    effects:['legendary_bonus:+0.5%','divine_bonus:+0.2%','roll_aura:crown'] },
+  // Cursed combos
+  { rarities:['cursed','cursed'],           tier:'cursed',   name:'Soulbane Circle',   gem:'☠', color:'#cc2020',
+    effects:['cursed_bonus:+0.6%','legendary_bonus:+0.3%','roll_aura:blood'] },
+  { rarities:['cursed','mythic'],           tier:'mythic',   name:'Void Corruption',   gem:'☠', color:'#8800cc',
+    effects:['mythic_bonus:+0.4%','cursed_bonus:+0.4%','pity_all:-6','roll_aura:corruption'] },
+  { rarities:['cursed','legendary'],        tier:'legendary',name:'Hexlord Band',      gem:'⬡', color:'#aa4444',
+    effects:['cursed_bonus:+0.4%','legendary_bonus:+0.4%','roll_aura:hex'] },
+  // Legendary combos
+  { rarities:['legendary','legendary','legendary'], tier:'legendary', name:'Triumvirate', gem:'⚜', color:'#f0c040',
+    effects:['legendary_bonus:+1.0%','pity_legendary:-15','roll_aura:golden_triple'] },
+  { rarities:['legendary','legendary'],     tier:'legendary',name:'Twin Fates Ring',   gem:'⚜', color:'#d4a020',
+    effects:['legendary_bonus:+0.6%','pity_rare:-8','roll_aura:golden'] },
+  // Rare combos
+  { rarities:['rare','rare','rare'],        tier:'rare',     name:'Triforce Band',     gem:'◆', color:'#4488ff',
+    effects:['rare_bonus:+0.8%','pity_rare:-10','roll_aura:sapphire'] },
+  { rarities:['rare','rare'],               tier:'rare',     name:'Dual Prism',        gem:'◆', color:'#2266cc',
+    effects:['rare_bonus:+0.4%','pity_rare:-5','roll_aura:blue_shimmer'] },
+  { rarities:['rare','legendary'],          tier:'legendary',name:'Ascendant Coil',    gem:'◈', color:'#8844cc',
+    effects:['rare_bonus:+0.3%','legendary_bonus:+0.4%','roll_aura:purple'] },
+  // Uncommon combos
+  { rarities:['uncommon','rare'],           tier:'rare',     name:'Verdant Seal',      gem:'◉', color:'#44aa66',
+    effects:['rare_bonus:+0.3%','uncommon_bonus:+0.5%','roll_aura:green'] },
+  // Fallback
+  { rarities:['common','common'],           tier:'common',   name:'Plain Band',        gem:'○', color:'#888888',
+    effects:['common_bonus:+0.5%'] },
+  { rarities:['common'],                    tier:'common',   name:'Pebble Ring',       gem:'·', color:'#666666',
+    effects:[] },
+];
+
+const RING_TIER_STYLES = {
+  common:    { bg:'rgba(30,28,40,.8)', border:'rgba(80,80,100,.35)',   text:'#a0a0c0', badge_bg:'rgba(60,60,80,.5)',   badge_color:'#909090' },
+  uncommon:  { bg:'rgba(10,28,18,.8)', border:'rgba(40,100,60,.35)',   text:'#80c090', badge_bg:'rgba(20,60,30,.5)',   badge_color:'#60aa70' },
+  rare:      { bg:'rgba(8,14,36,.8)',  border:'rgba(40,80,180,.35)',   text:'#80a8f0', badge_bg:'rgba(16,30,80,.5)',   badge_color:'#5080e0' },
+  legendary: { bg:'rgba(24,14,4,.8)', border:'rgba(160,100,20,.35)',  text:'#e0a840', badge_bg:'rgba(60,30,4,.5)',    badge_color:'#c08020' },
+  mythic:    { bg:'rgba(20,4,36,.8)', border:'rgba(140,40,220,.4)',   text:'#d080ff', badge_bg:'rgba(60,10,100,.5)',  badge_color:'#aa40ee' },
+  cursed:    { bg:'rgba(28,4,4,.8)',  border:'rgba(160,30,30,.35)',   text:'#e06060', badge_bg:'rgba(80,10,10,.5)',   badge_color:'#cc3030' },
+  divine:    { bg:'rgba(28,24,4,.8)', border:'rgba(200,170,20,.4)',   text:'#f0d040', badge_bg:'rgba(80,60,4,.5)',    badge_color:'#e0b820' },
+  spectral:  { bg:'rgba(0,14,28,.8)', border:'rgba(0,160,220,.4)',    text:'#40d8ff', badge_bg:'rgba(0,40,70,.5)',    badge_color:'#00bfff' },
+};
+
+const RING_AURA_CSS = {
+  chromatic:        'rune-aura-spectral',
+  gold_prismatic:   'rune-aura-divine-spectral',
+  void_prismatic:   'rune-aura-mythic-spectral',
+  twin_void:        'rune-aura-mythic',
+  godlight:         'rune-aura-god',
+  lightning_arc:    'rune-aura-lightning',
+  halo:             'rune-aura-divine',
+  crown:            'rune-aura-crown',
+  blood:            'rune-aura-cursed',
+  corruption:       'rune-aura-corruption',
+  hex:              'rune-aura-hex',
+  golden_triple:    'rune-aura-golden-triple',
+  golden:           'rune-aura-golden',
+  sapphire:         'rune-aura-sapphire',
+  blue_shimmer:     'rune-aura-blue',
+  purple:           'rune-aura-purple',
+  green:            'rune-aura-green',
+};
+
+// ── Helpers ────────────────────────────────────────────────
+function getNameRarity(name) {
+  for (const [r, arr] of Object.entries(NAMES)) {
+    if (arr.includes(name)) return r;
+  }
+  return 'common';
+}
+
+function matchRecipe(slotNames) {
+  const rarities = slotNames.filter(Boolean).map(getNameRarity).sort();
+  // Try 3-slot then 2-slot matches
+  for (const recipe of RING_RECIPES) {
+    const rr = [...recipe.rarities].sort();
+    if (rr.length === rarities.length && rr.every((r,i)=>r===rarities[i])) return recipe;
+  }
+  // Fallback: make a generic ring from highest rarity
+  const rarityOrder = ['spectral','divine','mythic','cursed','legendary','rare','uncommon','common'];
+  const highest = rarityOrder.find(r => rarities.includes(r)) || 'common';
+  return {
+    tier: highest, name: `${highest.charAt(0).toUpperCase()+highest.slice(1)} Ring`,
+    gem: '○', color: '#888',
+    effects: [`${highest}_bonus:+0.2%`]
+  };
+}
+
+function ringEffectLabel(effect) {
+  const map = {
+    spectral_bonus: '◈ Spectral chance',  divine_bonus: '✧ Divine chance',
+    mythic_bonus:   '✦ Mythic chance',    legendary_bonus: '⚜ Legendary chance',
+    cursed_bonus:   '☠ Cursed chance',    rare_bonus: '◆ Rare chance',
+    uncommon_bonus: '✿ Uncommon chance',  common_bonus: '• Common chance',
+    pity_all:       '⚖ All pity thresholds', pity_legendary: '👑 Legendary pity',
+    pity_rare:      '◆ Rare pity',
+  };
+  const [key, val] = effect.split(':');
+  if (key === 'roll_aura') return null; // aura is visual only, don't show
+  return `${map[key] || key} ${val}`;
+}
+
+// ── Open / Close ───────────────────────────────────────────
+function openRuneCraft() {
+  renderRunePicker();
+  renderEquippedRings();
+  renderRuneSlots();
+  document.getElementById('runeOverlay').classList.add('open');
+}
+function closeRuneCraft() {
+  document.getElementById('runeOverlay').classList.remove('open');
+  _runeActiveSlot = null;
+}
+
+// ── Slot interaction ───────────────────────────────────────
+function runeSlotClick(idx) {
+  // If filled, remove
+  if (window.runeSlots[idx]) {
+    window.runeSlots[idx] = null;
+    renderRuneSlots();
+    renderRunePicker();
+    updateForgeBtn();
+    renderForgePreview();
+    return;
+  }
+  // Otherwise set active for picking
+  _runeActiveSlot = idx;
+  // Highlight the slot
+  document.querySelectorAll('.rune-slot').forEach((s,i) => {
+    s.style.borderColor = i === idx ? 'rgba(200,120,255,.7)' : '';
+    s.style.boxShadow   = i === idx ? '0 0 18px rgba(180,80,255,.3)' : '';
+  });
+}
+
+function pickNameForSlot(name) {
+  if (_runeActiveSlot === null) {
+    // Auto-fill next empty slot
+    const empty = window.runeSlots.findIndex(s => !s);
+    if (empty === -1) return;
+    _runeActiveSlot = empty;
+  }
+  window.runeSlots[_runeActiveSlot] = name;
+  _runeActiveSlot = null;
+  document.querySelectorAll('.rune-slot').forEach(s => { s.style.borderColor=''; s.style.boxShadow=''; });
+  renderRuneSlots();
+  renderRunePicker();
+  updateForgeBtn();
+  renderForgePreview();
+}
+
+function renderRuneSlots() {
+  const GLYPHS = ['᛫','᛬','ᚹ'];
+  const LABELS = ['Slot 1','Slot 2','Slot 3 (optional)'];
+  for (let i = 0; i < 3; i++) {
+    const el = document.getElementById('runeSlot'+i);
+    if (!el) continue;
+    const name = window.runeSlots[i];
+    const rarity = name ? getNameRarity(name) : null;
+    const style = rarity ? RING_TIER_STYLES[rarity] : null;
+    el.className = 'rune-slot' + (name ? ' filled' : '');
+    el.innerHTML = name
+      ? `<div class="rune-slot-remove" onclick="event.stopPropagation();window.runeSlots[${i}]=null;renderRuneSlots();renderRunePicker();updateForgeBtn();renderForgePreview()">✕</div>
+         <div class="rune-slot-glyph">${GLYPHS[i]}</div>
+         <div class="rune-slot-name">${name}</div>
+         <div class="rune-slot-rarity-bar" style="background:${style?.border.replace('rgba','rgb').replace(/,[^,)]+\)/,')')||'#888'}"></div>`
+      : `<span class="rune-slot-glyph">${GLYPHS[i]}</span><span class="rune-slot-label">${LABELS[i]}</span>`;
+  }
+}
+
+function renderForgePreview() {
+  const el = document.getElementById('runeForgePreview');
+  if (!el) return;
+  const filled = window.runeSlots.filter(Boolean);
+  if (filled.length < 2) { el.innerHTML = ''; return; }
+  const recipe = matchRecipe(window.runeSlots);
+  const st = RING_TIER_STYLES[recipe.tier] || RING_TIER_STYLES.common;
+  const effects = recipe.effects.map(ringEffectLabel).filter(Boolean);
+  el.innerHTML = `
+    <div style="border:1px solid ${st.border};border-radius:6px;padding:10px 14px;background:${st.bg};transition:all .3s">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:16px;color:${st.text};letter-spacing:.06em;margin-bottom:5px">
+        ${recipe.gem} ${recipe.name}
+      </div>
+      <div style="font-size:8px;letter-spacing:.18em;text-transform:uppercase;color:${st.badge_color};margin-bottom:6px">${recipe.tier}</div>
+      ${effects.length ? `<div style="font-size:9px;color:#8070a0;line-height:1.7">${effects.join(' &nbsp;·&nbsp; ')}</div>` : ''}
+    </div>`;
+}
+
+function updateForgeBtn() {
+  const btn = document.getElementById('runeForgeBtn');
+  if (!btn) return;
+  const filled = window.runeSlots.filter(Boolean).length;
+  btn.disabled = filled < 2;
+}
+
+// ── Name picker ────────────────────────────────────────────
+function renderRunePicker() {
+  const grid = document.getElementById('runeNameGrid');
+  if (!grid) return;
+  const search = (document.getElementById('runePickerSearch')?.value || '').toLowerCase();
+  const usedInSlots = new Set(window.runeSlots.filter(Boolean));
+
+  grid.innerHTML = '';
+  const rarityOrder = ['spectral','divine','mythic','cursed','legendary','rare','uncommon','common'];
+  const allCollected = Object.keys(window.collected || {}).filter(n => window.collected[n]);
+
+  // Sort by rarity order then alphabetically
+  const sorted = allCollected.sort((a,b) => {
+    const ri = r => rarityOrder.indexOf(getNameRarity(r));
+    return ri(a) - ri(b) || a.localeCompare(b);
+  });
+
+  let shown = 0;
+  sorted.forEach(name => {
+    if (search && !name.toLowerCase().includes(search)) return;
+    const rarity = getNameRarity(name);
+    const chip = document.createElement('div');
+    chip.className = `rune-name-chip rune-chip-${rarity}${usedInSlots.has(name) ? ' in-use' : ''}`;
+    chip.textContent = name;
+    chip.title = rarity;
+    if (!usedInSlots.has(name)) {
+      chip.onclick = () => pickNameForSlot(name);
+    }
+    grid.appendChild(chip);
+    shown++;
+  });
+
+  if (shown === 0) {
+    grid.innerHTML = `<div style="font-size:10px;color:#3a2060;letter-spacing:.1em;padding:12px;text-transform:uppercase;font-family:'DM Mono',monospace">${Object.keys(window.collected||{}).length===0?'Roll names first to collect them!':'No names match.'}</div>`;
+  }
+}
+
+// ── Forge ──────────────────────────────────────────────────
+function doRuneForge() {
+  const filled = window.runeSlots.filter(Boolean);
+  if (filled.length < 2) return;
+
+  const recipe = matchRecipe(window.runeSlots);
+  const ring = {
+    id: Date.now(),
+    name: recipe.name,
+    gem: recipe.gem,
+    tier: recipe.tier,
+    color: recipe.color,
+    effects: recipe.effects,
+    aura: recipe.effects.find(e=>e.startsWith('roll_aura:'))?.split(':')[1] || null,
+    sourceNames: filled,
+    equippedAt: null
+  };
+
+  // Play forge animation, then add ring
+  playForgeAnimation(filled, recipe, () => {
+    window.ringVault.push(ring);
+    window.runeSlots = [null, null, null];
+    renderRuneSlots();
+    renderRunePicker();
+    updateForgeBtn();
+    renderForgePreview();
+    renderEquippedRings();
+    applyRingEffects();
+    scheduleSave();
+    toast(`⬡ Forged: ${ring.gem} ${ring.name}`, 'ring-toast');
+  });
+}
+
+// ── Forge Animation ────────────────────────────────────────
+function playForgeAnimation(names, recipe, onDone) {
+  const anim = document.getElementById('runeForgeAnim');
+  if (!anim) { onDone(); return; }
+  anim.innerHTML = '';
+  anim.classList.add('active');
+
+  const cx = window.innerWidth / 2;
+  const cy = window.innerHeight / 2;
+
+  // Name spirals flying to center
+  names.forEach((name, i) => {
+    const angle = (i / names.length) * Math.PI * 2;
+    const dist = 120;
+    const sx = Math.cos(angle) * dist;
+    const sy = Math.sin(angle) * dist;
+    const el = document.createElement('div');
+    el.className = 'rfa-name-spiral';
+    el.textContent = name;
+    el.style.cssText = `left:${cx}px;top:${cy}px;transform:translate(${sx}px,${sy}px);--sx:${sx}px;--sy:${sy}px;--rot:${180+i*60}deg;--dur:.7s;--delay:${i*.1}s`;
+    anim.appendChild(el);
+  });
+
+  // Spinning rings
+  const ringData = [
+    {size:80, color:recipe.color, dur:'1.2s', bw:'2px'},
+    {size:120,color:recipe.color+'88',dur:'.9s',bw:'1px'},
+  ];
+  ringData.forEach(rd => {
+    const el = document.createElement('div');
+    el.className = 'rfa-ring';
+    el.style.cssText = `width:${rd.size}px;height:${rd.size}px;left:${cx-rd.size/2}px;top:${cy-rd.size/2}px;border-color:${rd.color};border-width:${rd.bw};box-shadow:0 0 16px ${rd.color};--dur:${rd.dur}`;
+    anim.appendChild(el);
+  });
+
+  // Particles
+  for (let i=0; i<24; i++) {
+    const angle = (i/24)*Math.PI*2;
+    const dist = 40+Math.random()*80;
+    const el = document.createElement('div');
+    el.className = 'rfa-particle';
+    el.style.cssText = `left:${cx}px;top:${cy}px;background:${recipe.color};box-shadow:0 0 6px ${recipe.color};--tx:${Math.cos(angle)*dist}px;--ty:${Math.sin(angle)*dist}px;--dur:${.5+Math.random()*.4}s;--delay:${.3+Math.random()*.3}s`;
+    anim.appendChild(el);
+  }
+
+  // Flash
+  const flash = document.createElement('div');
+  flash.className = 'rfa-flash';
+  flash.style.cssText = `left:${cx-40}px;top:${cy-40}px;width:80px;height:80px;background:radial-gradient(circle,${recipe.color},transparent 70%)`;
+  anim.appendChild(flash);
+
+  setTimeout(() => {
+    anim.classList.remove('active');
+    anim.innerHTML = '';
+    onDone();
+  }, 1100);
+}
+
+// ── Equipped Rings ─────────────────────────────────────────
+const MAX_EQUIPPED = 3;
+
+function equipRing(ringId) {
+  const ring = window.ringVault.find(r=>r.id===ringId);
+  if (!ring) return;
+  if (window.equippedRings.length >= MAX_EQUIPPED) {
+    toast('⬡ Max 3 rings equipped. Unequip one first.', '');
+    return;
+  }
+  window.equippedRings.push(ring);
+  window.ringVault = window.ringVault.filter(r=>r.id!==ringId);
+  renderEquippedRings();
+  applyRingEffects();
+  updateCardOrbits();
+  scheduleSave();
+}
+
+function unequipRing(ringId) {
+  const ring = window.equippedRings.find(r=>r.id===ringId);
+  if (!ring) return;
+  window.equippedRings = window.equippedRings.filter(r=>r.id!==ringId);
+  window.ringVault.push(ring);
+  renderEquippedRings();
+  applyRingEffects();
+  updateCardOrbits();
+  scheduleSave();
+}
+
+function renderEquippedRings() {
+  const list = document.getElementById('runeEquippedList');
+  const vault = document.getElementById('runeVaultList');
+  if (!list || !vault) return;
+
+  list.innerHTML = '';
+  // 3 slots (filled or empty)
+  for (let i=0; i<MAX_EQUIPPED; i++) {
+    const ring = window.equippedRings[i];
+    const card = document.createElement('div');
+    if (!ring) {
+      card.className = 'rune-ring-card slot-empty';
+      card.innerHTML = `<div class="rune-ring-empty-label">Empty Slot ${i+1}</div>`;
+    } else {
+      const st = RING_TIER_STYLES[ring.tier] || RING_TIER_STYLES.common;
+      const effects = ring.effects.map(ringEffectLabel).filter(Boolean);
+      card.className = `rune-ring-card ring-${ring.tier}`;
+      card.style.cssText = `background:${st.bg};border-color:${st.border};`;
+      card.style.setProperty('--delay', `${i*0.06}s`);
+      card.innerHTML = `
+        <div class="rune-ring-name" style="color:${st.text}">
+          <span class="rune-ring-gem" style="text-shadow:0 0 8px ${ring.color}">${ring.gem}</span>
+          ${ring.name}
+        </div>
+        <div class="rune-ring-effect">${effects.join(' · ') || 'Visual effect only'}</div>
+        <div class="rune-ring-footer">
+          <div class="rune-ring-rarity" style="color:${st.badge_color};background:${st.badge_bg};border:1px solid ${st.border}">${ring.tier}</div>
+          <button class="rune-ring-unequip" onclick="unequipRing(${ring.id})">Unequip</button>
+        </div>`;
+    }
+    list.appendChild(card);
+  }
+
+  // Vault
+  vault.innerHTML = '';
+  if (window.ringVault.length === 0) {
+    vault.innerHTML = '<div style="font-size:9px;color:#3a2060;letter-spacing:.12em;text-transform:uppercase;font-family:DM Mono,monospace;padding:8px 4px">No rings in vault</div>';
+    return;
+  }
+  window.ringVault.forEach((ring, i) => {
+    const st = RING_TIER_STYLES[ring.tier] || RING_TIER_STYLES.common;
+    const effects = ring.effects.map(ringEffectLabel).filter(Boolean);
+    const card = document.createElement('div');
+    card.className = `rune-ring-card ring-${ring.tier}`;
+    card.style.cssText = `background:${st.bg};border-color:${st.border};`;
+    card.style.setProperty('--delay', `${i*0.05}s`);
+    card.innerHTML = `
+      <div class="rune-ring-name" style="color:${st.text}">
+        <span class="rune-ring-gem" style="text-shadow:0 0 8px ${ring.color}">${ring.gem}</span>
+        ${ring.name}
+      </div>
+      <div class="rune-ring-effect">${effects.join(' · ') || 'Visual effect only'}</div>
+      <div class="rune-ring-footer">
+        <div class="rune-ring-rarity" style="color:${st.badge_color};background:${st.badge_bg};border:1px solid ${st.border}">${ring.tier}</div>
+        <button class="rune-ring-unequip" style="color:#8060d0;border-color:rgba(100,60,180,.4)" onclick="equipRing(${ring.id})">Equip</button>
+      </div>`;
+    vault.appendChild(card);
+  });
+}
+
+// ── Orbiting rings on the roll card ───────────────────────
+function updateCardOrbits() {
+  const card = document.getElementById('card');
+  if (!card) return;
+  // Remove old orbits
+  card.querySelectorAll('.ring-orbit-wrap').forEach(e=>e.remove());
+  if (window.equippedRings.length === 0) return;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'ring-orbit-wrap';
+  card.appendChild(wrap);
+
+  const orbitSizes  = [110, 130, 150];
+  const orbitDurs   = ['8s','12s','9s'];
+  const orbitDirs   = ['normal','reverse','normal'];
+  const dotColors = {
+    common:'rgba(160,160,180,.9)',uncommon:'rgba(60,180,80,.9)',rare:'rgba(60,140,255,.9)',
+    legendary:'rgba(220,160,20,.9)',mythic:'rgba(200,60,255,.9)',cursed:'rgba(220,40,40,.9)',
+    divine:'rgba(240,210,20,.9)',spectral:'rgba(0,210,255,.9)'
+  };
+
+  window.equippedRings.forEach((ring, i) => {
+    const size = orbitSizes[i];
+    const orbit = document.createElement('div');
+    orbit.className = 'ring-orbit';
+    orbit.style.cssText = `
+      width:${size}px;height:${size}px;
+      left:calc(50% - ${size/2}px);top:calc(50% - ${size/2}px);
+      border-color:${ring.color}44;
+      box-shadow:0 0 8px ${ring.color}22, inset 0 0 8px ${ring.color}11;
+      --dur:${orbitDurs[i]};--dir:${orbitDirs[i]};
+    `;
+
+    // dot
+    const dot = document.createElement('div');
+    dot.className = 'ring-orbit-dot';
+    const dc = dotColors[ring.tier] || 'rgba(180,100,255,.9)';
+    dot.style.cssText = `background:${ring.color};--dot-glow:${dc};box-shadow:0 0 8px 3px ${ring.color}bb`;
+    orbit.appendChild(dot);
+
+    // extra glyph dot
+    const glyph = document.createElement('div');
+    glyph.style.cssText = `position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);font-size:10px;color:${ring.color};text-shadow:0 0 6px ${ring.color};`;
+    glyph.textContent = ring.gem;
+    orbit.appendChild(glyph);
+
+    wrap.appendChild(orbit);
+  });
+}
+
+// ── Ring effect application ────────────────────────────────
+window._ringBonuses = {};
+function applyRingEffects() {
+  const bonuses = {};
+  window.equippedRings.forEach(ring => {
+    ring.effects.forEach(eff => {
+      const [key, val] = eff.split(':');
+      if (key === 'roll_aura') return;
+      const num = parseFloat(val);
+      if (!isNaN(num)) bonuses[key] = (bonuses[key]||0) + num;
+    });
+  });
+  window._ringBonuses = bonuses;
+  // Update card aura class
+  const card = document.getElementById('card');
+  if (card) {
+    card.classList.remove(...Object.values(RING_AURA_CSS));
+    window.equippedRings.forEach(ring => {
+      if (ring.aura && RING_AURA_CSS[ring.aura]) card.classList.add(RING_AURA_CSS[ring.aura]);
+    });
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════
+// COUNTER + STYLE
+// ═══════════════════════════════════════════════════════════
+function updateRollCounter() {
+  const el = document.getElementById('rollCounter');
+  if (el) el.textContent = window.totalRolls > 0 ? `#${window.totalRolls}` : '';
+}
+
+// updateButtonStyle — defined in button-styles.js
+
+// ═══════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════
+function toast(msg, cls='') {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = `toast${cls ? ' '+cls : ''}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => {
+    t.classList.add('out');
+    setTimeout(() => t.remove(), 320);
+  }, 3600);
+}
+
+// ═══════════════════════════════════════════════════════════
+// FIREBASE SAVE
+// ═══════════════════════════════════════════════════════════
+function setStatus(type, msg) {
+  const el = document.getElementById('saveStatus');
+  el.textContent = msg;
+  el.className = `save-status ${type}`;
+}
+
+function scheduleSave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveToFirebase, 1800);
+}
+
+async function saveToFirebase() {
+  if (!window._dbReady) return;
+  setStatus('saving', 'Saving…');
+  try {
+    const ref = window._dbDoc(window._db, 'saves', 'player1');
+    await window._dbSetDoc(ref, {
+      collected:        window.collected,
+      totalRolls:       window.totalRolls,
+      activeStyle:      window.activeStyle,
+      rollHistory:      window.rollHistory,
+      rebirthCount:     window.rebirthCount,
+      totalSkillPoints: window.totalSkillPoints,
+      spentSkillPoints: window.spentSkillPoints,
+      unlockedSkills:   window.unlockedSkills,
+      equippedRings:    window.equippedRings,
+      ringVault:        window.ringVault,
+      updatedAt:        new Date().toISOString()
+    });
+    setStatus('saved', '● saved');
+    setTimeout(() => setStatus('',''), 2000);
+  } catch(e) {
+    setStatus('error', 'Save failed');
+    console.error(e);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// BOOK
+// ═══════════════════════════════════════════════════════════
+function openBook() {
+  coverFlipped = false;
+  document.getElementById('bookCover').classList.remove('opened');
+  document.getElementById('bookOverlay').classList.add('open');
+  currentPage = 0;
+  renderPage();
+}
+function closeBook() { document.getElementById('bookOverlay').classList.remove('open'); }
+function flipCover() {
+  if (!coverFlipped) { document.getElementById('bookCover').classList.add('opened'); coverFlipped = true; }
+}
+
+function switchTab(rarity, btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentTab = rarity; currentPage = 0;
+  animatePage('right');
+}
+
+function getFilteredNames() {
+  const rarities = currentTab === 'all'
+    ? ['spectral','divine','mythic','cursed','legendary','rare','uncommon','common']
+    : [currentTab];
+  let all = [];
+  rarities.forEach(r => {
+    if (!NAMES[r]) return;
+    NAMES[r].forEach(n => all.push({ name:n, rarity:r, collected:!!window.collected[n] }));
+  });
+  return all;
+}
+
+function renderPage() {
+  const names   = getFilteredNames();
+  const slice   = names.slice(currentPage * NAMES_PER_PAGE, (currentPage+1) * NAMES_PER_PAGE);
+  const content = document.getElementById('pageContent');
+
+  if (!names.length) {
+    content.innerHTML = '<div style="text-align:center;padding:48px;color:#bbb;font-size:11px;letter-spacing:.15em;text-transform:uppercase">No names</div>';
+    return;
+  }
+
+  const groups = {};
+  slice.forEach(item => { if (!groups[item.rarity]) groups[item.rarity]=[]; groups[item.rarity].push(item); });
+
+  let html = '';
+  ['spectral','divine','mythic','cursed','legendary','rare','uncommon','common'].forEach(r => {
+    if (!groups[r]) return;
+    const cfg = RARITY_CONFIG[r];
+    html += `<div class="rarity-section-label" style="color:${cfg.color}">${cfg.label}</div><div class="names-grid">`;
+    groups[r].forEach(item => {
+      html += `<div class="name-entry ${item.collected ? `collected rarity-${r}` : 'not-collected'}">${item.name}</div>`;
+    });
+    html += '</div>';
+  });
+
+  content.innerHTML = html;
+  const cc = Object.keys(window.collected).length;
+  const tc = allNamesFlat().length;
+  document.getElementById('bookCount').textContent = cc === 0 ? 'No names collected yet' : `${cc} / ${tc} collected`;
+  const pages = Math.ceil(names.length / NAMES_PER_PAGE);
+  document.getElementById('prevBtn').disabled = currentPage === 0;
+  document.getElementById('nextBtn').disabled = currentPage >= pages - 1;
+  updateRebirthButton();
+}
+
+function animatePage(dir) {
+  const p = document.getElementById('pageContent');
+  p.classList.remove('visible');
+  p.classList.add(dir === 'right' ? 'exit-left' : 'enter-right');
+  setTimeout(() => {
+    renderPage();
+    p.classList.remove('exit-left','enter-right');
+    p.classList.add('enter-right');
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      p.classList.remove('enter-right');
+      p.classList.add('visible');
+    }));
+  }, 260);
+}
+
+function prevPage() { if (currentPage > 0) { currentPage--; animatePage('left'); } }
+function nextPage() {
+  const t = getFilteredNames().length;
+  if (currentPage < Math.ceil(t / NAMES_PER_PAGE) - 1) { currentPage++; animatePage('right'); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SHOP — fully owned by button-styles.js
+// ═══════════════════════════════════════════════════════════
+
+// init
+setTimeout(() => {
+  updateRebirthButton();
+}, 200);
+</script>
+</body>
+</html>
