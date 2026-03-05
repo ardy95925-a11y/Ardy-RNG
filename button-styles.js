@@ -36,6 +36,11 @@ window.BUTTON_STYLES = [
     desc:"Deep slate with a subtle sheen.",
     previewLabel:"Roll"
   },
+  {
+    id:"simplist", name:"simplist", category:"classic", unlockAt:50, rarity:"rare",
+    desc:"simplist style for simple me :p",
+    previewLabel:"Roll :D"
+  },
 
   /* ── ELEMENTAL ───────────────────────────────────────── */
   {
